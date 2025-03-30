@@ -1,0 +1,24 @@
+{
+  "name": "codex",
+  "version": "1.0.0",
+  "description": "LLM Prompt Tracker - compare responses from different LLMs",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "lint": "eslint src/**/*.{js,jsx}",
+    "approve-builds": "echo 'Approving builds...' && vite build"
+  },
+  "dependencies": {
+    "preact": "^10.26.4",
+    "preact-router": "^4.1.2",
+    "@picocss/pico": "^2.1.1",
+    "marked": "^9.1.6"
+  },
+  "devDependencies": {
+    "@preact/preset-vite": "^2.10.1",
+    "eslint": "^7.32.0",
+    "eslint-plugin-preact": "^0.1.0",
+    "vite": "^6.2.3"
+  }
+}
