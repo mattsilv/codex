@@ -7,6 +7,7 @@ import CopyButton from '../components/ui/CopyButton';
 import ResponseForm from '../components/response/ResponseForm';
 import ResponseList from '../components/response/ResponseList';
 import MarkdownPreview from '../components/response/MarkdownPreview';
+import { LoadingSpinner, LoadingOverlay, ErrorMessage } from '../components/ui/LoadingState';
 import usePrompts from '../hooks/usePrompts';
 import useResponses from '../hooks/useResponses';
 import useMarkdown from '../hooks/useMarkdown';
@@ -14,15 +15,17 @@ import { AppContext } from '../context/AppContext';
 import useAuth from '../hooks/useAuth';
 import { detectMarkdown } from '../utils/markdownDetector';
 import { marked } from 'marked';
+import '../styles/loading.css';
 
 export default function PromptDetail({ id }) {
   const { getPrompt, updatePrompt, deletePrompt } = usePrompts();
-  const { responses, loading: responsesLoading } = useResponses(id);
+  const { responses, loading: responsesLoading, error: responsesError } = useResponses(id);
   const { showToast } = useContext(AppContext);
   const { user } = useAuth();
   
   const [prompt, setPrompt] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [isAddingResponse, setIsAddingResponse] = useState(false);
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
   const [isPublic, setIsPublic] = useState(false);
@@ -41,8 +44,9 @@ export default function PromptDetail({ id }) {
   
   const loadPrompt = async () => {
     setLoading(true);
+    setError(null);
     try {
-      const loadedPrompt = getPrompt(id);
+      const loadedPrompt = await getPrompt(id);
       if (loadedPrompt) {
         setPrompt(loadedPrompt);
         setIsPublic(loadedPrompt.isPublic);
@@ -63,13 +67,13 @@ export default function PromptDetail({ id }) {
           setRenderedContent(loadedPrompt.content);
         }
       } else {
+        setError('Prompt not found');
         showToast('Prompt not found', 'error');
-        route('/dashboard');
       }
-    } catch (error) {
-      console.error('Error loading prompt:', error);
+    } catch (err) {
+      console.error('Error loading prompt:', err);
+      setError(err.message || 'Failed to load prompt');
       showToast('Failed to load prompt', 'error');
-      route('/dashboard');
     } finally {
       setLoading(false);
     }
@@ -154,11 +158,30 @@ export default function PromptDetail({ id }) {
   };
   
   if (loading) {
-    return <div>Loading prompt...</div>;
+    return (
+      <div className="loading-container" style="display: flex; justify-content: center; padding: 3rem 0;">
+        <LoadingSpinner size="large" />
+      </div>
+    );
+  }
+  
+  if (error) {
+    return (
+      <div>
+        <ErrorMessage message={error} onRetry={loadPrompt} />
+        <Button onClick={() => route('/dashboard')} style="margin-top: 1rem;">Back to Dashboard</Button>
+      </div>
+    );
   }
   
   if (!prompt) {
-    return <div>Prompt not found</div>;
+    return (
+      <div className="error-state">
+        <h2>Prompt not found</h2>
+        <p>The prompt you're looking for could not be found.</p>
+        <Button onClick={() => route('/dashboard')}>Back to Dashboard</Button>
+      </div>
+    );
   }
   
   return (
@@ -274,15 +297,21 @@ export default function PromptDetail({ id }) {
         <Button onClick={() => setIsAddingResponse(true)} className="btn-md">Add Response</Button>
       </div>
       
+      <ErrorMessage message={responsesError} />
+      
       {responsesLoading ? (
-        <p>Loading responses...</p>
+        <div className="loading-container" style="display: flex; justify-content: center; padding: 2rem 0;">
+          <LoadingSpinner size="medium" />
+        </div>
       ) : responses.length === 0 ? (
         <div className="empty-state">
           <p>No responses yet. Add your first response to this prompt.</p>
           <Button onClick={() => setIsAddingResponse(true)}>Add Response</Button>
         </div>
       ) : (
-        <ResponseList responses={responses} promptId={id} />
+        <LoadingOverlay loading={responsesLoading}>
+          <ResponseList responses={responses} promptId={id} />
+        </LoadingOverlay>
       )}
       
       {/* Add Response Modal */}

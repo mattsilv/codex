@@ -2,8 +2,10 @@ import { useState } from 'preact/hooks';
 import Button from '../ui/Button';
 import Input from '../ui/Input';
 import MarkdownPreview from './MarkdownPreview';
+import { LoadingSpinner } from '../ui/LoadingState';
 import useResponses from '../../hooks/useResponses';
 import useMarkdown from '../../hooks/useMarkdown';
+import '../../styles/loading.css';
 
 export default function ResponseForm({ promptId, onSuccess }) {
   const { createResponse, responses } = useResponses(promptId);
@@ -94,12 +96,13 @@ export default function ResponseForm({ promptId, onSuccess }) {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
     if (!validate()) return;
     
     setIsSubmitting(true);
+    setErrors({});
     
     try {
       // Use the custom model name if "Other" is selected
@@ -108,7 +111,7 @@ export default function ResponseForm({ promptId, onSuccess }) {
         : formData.modelName;
         
       // Create the response
-      const newResponse = createResponse({
+      const newResponse = await createResponse({
         modelName: modelNameToUse,
         rawContent: rawContent,
         cleanContent: renderedContent,
@@ -122,7 +125,7 @@ export default function ResponseForm({ promptId, onSuccess }) {
     } catch (error) {
       console.error('Error creating response:', error);
       setErrors({
-        form: 'Failed to create response. Please try again.'
+        form: error.message || 'Failed to create response. Please try again.'
       });
     } finally {
       setIsSubmitting(false);
@@ -256,9 +259,13 @@ export default function ResponseForm({ promptId, onSuccess }) {
       
       <div className="action-buttons gap-md">
         <Button type="submit" disabled={isSubmitting} className="btn-md">
-          {isSubmitting ? 'Saving...' : 'Save Response'}
+          {isSubmitting ? (
+            <span style="display: flex; align-items: center; gap: 0.5rem;">
+              <LoadingSpinner size="small" /> Saving...
+            </span>
+          ) : 'Save Response'}
         </Button>
-        <Button type="button" variant="outline" onClick={onSuccess} className="btn-md">
+        <Button type="button" variant="outline" onClick={onSuccess} className="btn-md" disabled={isSubmitting}>
           Cancel
         </Button>
       </div>

@@ -3,12 +3,14 @@ import { route } from 'preact-router';
 import Button from '../components/ui/Button';
 import PromptList from '../components/prompt/PromptList';
 import MigrationBanner from '../components/ui/MigrationBanner';
+import { LoadingSpinner, ErrorMessage } from '../components/ui/LoadingState';
 import usePrompts from '../hooks/usePrompts';
 import useAuth from '../hooks/useAuth';
+import '../styles/loading.css';
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const { prompts, loading, refresh } = usePrompts();
+  const { prompts, loading, error, refresh } = usePrompts();
 
   useEffect(() => {
     // Refresh prompts when dashboard loads
@@ -30,8 +32,12 @@ export default function Dashboard() {
       
       <MigrationBanner />
 
+      <ErrorMessage message={error} onRetry={refresh} />
+      
       {loading ? (
-        <p aria-busy="true">Loading prompts...</p>
+        <div class="loading-container" style="display: flex; justify-content: center; padding: 2rem 0;">
+          <LoadingSpinner size="large" />
+        </div>
       ) : prompts.length === 0 ? (
         <div className="empty-state">
           <p>You don't have any prompts yet.</p>

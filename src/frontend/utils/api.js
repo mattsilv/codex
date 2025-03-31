@@ -1,5 +1,26 @@
 import { API_URL, STORAGE_KEYS } from '@shared/constants';
 
+// Centralized API error class with custom properties
+class ApiError extends Error {
+  constructor(message, status, data) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+    this.data = data;
+    this.isNetworkError = false;
+  }
+}
+
+// Network error class for offline/connectivity issues
+class NetworkError extends ApiError {
+  constructor(originalError) {
+    super('Network error, please check your connection', 0, null);
+    this.name = 'NetworkError';
+    this.originalError = originalError;
+    this.isNetworkError = true;
+  }
+}
+
 // Helper for making authenticated API requests
 async function fetchAPI(endpoint, options = {}) {
   const token = localStorage.getItem(STORAGE_KEYS.TOKEN);
@@ -17,26 +38,49 @@ async function fetchAPI(endpoint, options = {}) {
     ...options,
     headers,
   };
-  
-  const response = await fetch(`${API_URL}${endpoint}`, config);
-  
-  // Handle authentication errors
-  if (response.status === 401) {
-    localStorage.removeItem(STORAGE_KEYS.TOKEN);
-    localStorage.removeItem(STORAGE_KEYS.USER);
-    // If we're in the browser, redirect to login page
-    if (typeof window !== 'undefined') {
-      window.location.href = '/login';
+
+  try {
+    const response = await fetch(`${API_URL}${endpoint}`, config);
+    
+    // Handle authentication errors
+    if (response.status === 401) {
+      localStorage.removeItem(STORAGE_KEYS.TOKEN);
+      localStorage.removeItem(STORAGE_KEYS.USER);
+      // If we're in the browser, redirect to login page
+      if (typeof window !== 'undefined') {
+        window.location.href = '/login';
+      }
+      throw new ApiError('Authentication failed', 401);
     }
+
+    let data;
+    // Not all responses will be JSON (e.g., 204 No Content)
+    const contentType = response.headers.get('content-type');
+    if (contentType && contentType.includes('application/json')) {
+      data = await response.json();
+    }
+    
+    if (!response.ok) {
+      const errorMessage = data?.error || response.statusText || 'An unexpected error occurred';
+      throw new ApiError(errorMessage, response.status, data);
+    }
+    
+    return data;
+  } catch (error) {
+    // Handle network errors (offline, etc.)
+    if (error.name === 'TypeError' && error.message.includes('fetch')) {
+      console.warn('Network error detected:', error);
+      throw new NetworkError(error);
+    }
+    
+    // Re-throw ApiErrors
+    if (error instanceof ApiError) {
+      throw error;
+    }
+    
+    // For any other errors
+    throw new ApiError(error.message, 500);
   }
-  
-  const data = await response.json();
-  
-  if (!response.ok) {
-    throw new Error(data.error || 'Something went wrong');
-  }
-  
-  return data;
 }
 
 // Auth API client
@@ -166,4 +210,10 @@ export const responsesAPI = {
       method: 'DELETE',
     });
   },
+};
+
+// Export error classes for use in components
+export const ApiErrors = {
+  ApiError,
+  NetworkError
 };

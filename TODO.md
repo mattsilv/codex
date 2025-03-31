@@ -32,8 +32,8 @@
 - [x] Create test data and scenarios
 - [x] Create test scripts for frontend and backend
 - [x] Test full stack locally
-- [ ] Add error handling for API failures
-- [ ] Add loading states for API requests
+- [x] Add error handling for API failures
+- [x] Add loading states for API requests
 
 ## Post-MVP Follow-ups
 - [ ] Implement proper input validation
@@ -61,8 +61,8 @@
 7. ✅ Fix any issues found during testing
 8. ✅ Test API integration with local backend
 9. ✅ Create API test page for quick testing
-10. Add UI indicators for network operations (loading, success, error states)
-11. Implement proper error handling for network failures
+10. ✅ Add UI indicators for network operations (loading, success, error states)
+11. ✅ Implement proper error handling for network failures
 12. Test the full authentication flow
 13. Add form validation for all forms
 14. Create better error messages for users
