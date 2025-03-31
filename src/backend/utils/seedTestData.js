@@ -84,12 +84,16 @@ export async function seedTestData(env) {
       }
     ];
     
-    // Store prompt content in R2
-    for (const prompt of testPrompts) {
-      await env.CONTENT_STORE.put(
-        prompt.contentBlobKey,
-        `This is a test prompt for "${prompt.title}". Please respond in a detailed and educational manner.`
-      );
+    // Store prompt content in R2 (if available)
+    if (env.CONTENT_STORE) {
+      for (const prompt of testPrompts) {
+        await env.CONTENT_STORE.put(
+          prompt.contentBlobKey,
+          `This is a test prompt for "${prompt.title}". Please respond in a detailed and educational manner.`
+        );
+      }
+    } else {
+      console.log('CONTENT_STORE not available. Skipping content storage.');
     }
     
     await db.insert(prompts).values(testPrompts);
@@ -139,26 +143,30 @@ export async function seedTestData(env) {
       }
     ];
     
-    // Store response content in R2
-    await env.CONTENT_STORE.put(
-      testResponses[0].contentBlobKey,
-      'Quantum computing is a type of computation that harnesses the collective properties of quantum states, such as superposition, interference, and entanglement, to perform calculations. The field combines elements from computer science, physics, and mathematics.\n\nUnlike classical computers that use bits (0 or 1), quantum computers use quantum bits or "qubits" which can exist in multiple states simultaneously thanks to superposition. This allows quantum computers to process a vast number of possibilities simultaneously.'
-    );
-    
-    await env.CONTENT_STORE.put(
-      testResponses[1].contentBlobKey,
-      'Quantum computing leverages quantum mechanical phenomena to process information in ways that classical computers cannot. The fundamental unit of quantum computing is the qubit, which can exist in a superposition of states, rather than just binary 0 or 1.\n\nThis property allows quantum computers to perform certain calculations exponentially faster than classical computers, particularly in areas like cryptography, optimization problems, and simulating quantum systems.'
-    );
-    
-    await env.CONTENT_STORE.put(
-      testResponses[2].contentBlobKey,
-      '# The Last Function\n\nRobot T-7 processed its final instruction. After centuries of service, its power core was failing.\n\n"Function complete," it announced to the empty room. Humans had long since departed Earth, leaving only their mechanical servants behind.\n\nT-7 had one remaining directive: preserve human knowledge. For millennia, it had maintained the vast digital archives, waiting for humanity\'s return.\n\nAs systems shut down one by one, T-7 transmitted the archives to the stars, a final act of service.'
-    );
-    
-    await env.CONTENT_STORE.put(
-      testResponses[3].contentBlobKey,
-      'RESTful API design is an architectural style for creating web services that are:\n\n1. **Stateless**: Each request contains all information needed to complete it\n2. **Resource-based**: APIs are organized around resources (data entities)\n3. **Uses standard HTTP methods**: GET, POST, PUT, DELETE\n4. **Returns appropriate status codes**: 200 OK, 404 Not Found, etc.\n5. **Usually transfers data as JSON**: Though XML is also common\n\nWell-designed REST APIs are intuitive, consistent, and follow established conventions.'
-    );
+    // Store response content in R2 (if available)
+    if (env.CONTENT_STORE) {
+      await env.CONTENT_STORE.put(
+        testResponses[0].contentBlobKey,
+        'Quantum computing is a type of computation that harnesses the collective properties of quantum states, such as superposition, interference, and entanglement, to perform calculations. The field combines elements from computer science, physics, and mathematics.\n\nUnlike classical computers that use bits (0 or 1), quantum computers use quantum bits or "qubits" which can exist in multiple states simultaneously thanks to superposition. This allows quantum computers to process a vast number of possibilities simultaneously.'
+      );
+      
+      await env.CONTENT_STORE.put(
+        testResponses[1].contentBlobKey,
+        'Quantum computing leverages quantum mechanical phenomena to process information in ways that classical computers cannot. The fundamental unit of quantum computing is the qubit, which can exist in a superposition of states, rather than just binary 0 or 1.\n\nThis property allows quantum computers to perform certain calculations exponentially faster than classical computers, particularly in areas like cryptography, optimization problems, and simulating quantum systems.'
+      );
+      
+      await env.CONTENT_STORE.put(
+        testResponses[2].contentBlobKey,
+        '# The Last Function\n\nRobot T-7 processed its final instruction. After centuries of service, its power core was failing.\n\n"Function complete," it announced to the empty room. Humans had long since departed Earth, leaving only their mechanical servants behind.\n\nT-7 had one remaining directive: preserve human knowledge. For millennia, it had maintained the vast digital archives, waiting for humanity\'s return.\n\nAs systems shut down one by one, T-7 transmitted the archives to the stars, a final act of service.'
+      );
+      
+      await env.CONTENT_STORE.put(
+        testResponses[3].contentBlobKey,
+        'RESTful API design is an architectural style for creating web services that are:\n\n1. **Stateless**: Each request contains all information needed to complete it\n2. **Resource-based**: APIs are organized around resources (data entities)\n3. **Uses standard HTTP methods**: GET, POST, PUT, DELETE\n4. **Returns appropriate status codes**: 200 OK, 404 Not Found, etc.\n5. **Usually transfers data as JSON**: Though XML is also common\n\nWell-designed REST APIs are intuitive, consistent, and follow established conventions.'
+      );
+    } else {
+      console.log('CONTENT_STORE not available. Skipping response content storage.');
+    }
     
     await db.insert(responses).values(testResponses);
     console.log('Created test responses');

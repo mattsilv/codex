@@ -79,7 +79,14 @@ export default {
       }
 
       // Serve static assets for frontend (fallback)
-      return env.ASSETS.fetch(request);
+      if (env.ASSETS) {
+        return env.ASSETS.fetch(request);
+      } else {
+        return new Response("Not found", { 
+          status: 404,
+          headers: { "Content-Type": "text/plain" }
+        });
+      }
     } catch (error) {
       // Handle any errors and add CORS headers
       console.error("Error processing request:", error);

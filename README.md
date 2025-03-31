@@ -1,125 +1,99 @@
 # Codex - LLM Prompt Tracker
 
-A tool for tracking prompts and comparing responses from different Large Language Models (LLMs).
+A web application for saving, organizing, and comparing responses from different Large Language Models.
 
-## Features
-
-- Track and organize prompts
-- Store responses from different LLMs for comparison
-- Share prompts and responses with others
-- Full-stack app with Cloudflare Workers backend and Preact frontend
-- Storage via Cloudflare D1 (SQLite) and R2 (object storage)
-
-## Table of Contents
-
-- [Setup](#setup)
-- [Development](#development)
-- [Testing](#testing)
-- [Migrating Data](#migrating-data)
-- [Deployment](#deployment)
-
-## Setup
+## Setup & Development Guide
 
 ### Prerequisites
 
-- Node.js 18+ 
+- Node.js 18 or later
 - npm or pnpm
-- Cloudflare account (for deployment)
 
-### First-time Setup
+### Installation
 
-1. Clone the repository
-2. Install dependencies:
+```bash
+# Install dependencies
+npm install
+```
+
+### Development
+
+We've created several convenience scripts to handle development:
+
+#### Option 1: Start both frontend and backend together (recommended)
+
+```bash
+npm run dev:all
+```
+
+This starts both the frontend and backend servers simultaneously. Frontend will be at http://localhost:3000 and backend at http://localhost:8787.
+
+#### Option 2: Start frontend and backend separately
+
+Terminal 1:
+```bash
+npm run dev:backend
+```
+
+Terminal 2:
+```bash
+npm run dev:frontend
+```
+
+#### Seed test data
+
+The backend automatically attempts to seed test data on startup. If you need to manually seed data:
+
+```bash
+npm run seed-data
+```
+
+### Test accounts
+
+After seeding test data, you can log in with:
+
+1. **Alice:**
+   - Email: alice@example.com
+   - Password: password123
+
+2. **Bob:**
+   - Email: bob@example.com
+   - Password: password123
+
+## Project Structure
+
+- `/src/` - Source code
+  - `/backend/` - Cloudflare Worker backend
+  - `/components/` - Preact components
+  - `/context/` - Application context providers
+  - `/hooks/` - Custom React hooks
+  - `/pages/` - Page components
+  - `/utils/` - Utility functions
+- `/migrations/` - Database migrations
+- `/public/` - Static assets
+
+## Technologies
+
+- **Frontend:** Preact, PicoCSS
+- **Backend:** Cloudflare Workers
+- **Database:** Cloudflare D1 (SQLite)
+- **Storage:** Cloudflare R2
+- **Build System:** Vite
+
+## Troubleshooting
+
+If you encounter issues with authentication or the backend:
+
+1. Try restarting the backend server:
    ```bash
-   npm install
+   npm run dev:backend
    ```
-3. Run the setup script:
+
+2. If database issues persist, reset your local development database:
    ```bash
-   ./setup.sh
+   rm -rf .wrangler/state/d1
    ```
-   This will:
-   - Create Cloudflare D1 database
-   - Set up Cloudflare R2 storage
-   - Apply database migrations
-   - Configure wrangler.toml
 
-## Development
+3. Check browser console for error messages when using the Auth page
 
-The application is structured as a monorepo with:
-- Frontend (Preact)
-- Backend (Cloudflare Workers)
-- Shared code
-
-### Quick Start
-
-To start both frontend and backend servers:
-
-```bash
-./start-dev.sh
-```
-
-This starts:
-- Frontend at http://localhost:3000
-- Backend at http://localhost:8787
-- API Test Page at http://localhost:3000/test.html
-
-### Starting Servers Individually
-
-Start the frontend development server:
-```bash
-npm run dev
-```
-
-Start the backend development server:
-```bash
-npm run dev:worker
-```
-
-## Testing
-
-### Test API
-
-We provide an API test page to quickly verify backend functionality:
-
-1. Start both servers with `./start-dev.sh`
-2. Visit http://localhost:3000/test.html
-3. Use the buttons to test API endpoints:
-   - Seed Test Data: Creates test users, prompts, and responses
-   - Register: Creates a new user
-   - Login: Authenticates as a test user
-   - Get Prompts: Retrieves user prompts
-   - Create Prompt: Creates a new prompt
-
-### Backend Tests
-
-Run backend component tests:
-```bash
-node src/backend/local-test.js
-```
-
-## Migrating Data
-
-If you're migrating from the localStorage-only version to the backend API version, you can use the data migration utilities:
-
-1. Log in to your account
-2. Visit the Dashboard
-3. Click the migration banner to transfer your data from localStorage to the backend
-
-## Deployment
-
-### Deploy to Cloudflare
-
-Deploy the backend to Cloudflare Workers:
-```bash
-npm run deploy:worker
-```
-
-Deploy the frontend to Cloudflare Pages:
-```bash
-npm run build
-npm run deploy:frontend
-```
-
-## License
-
-MIT
+4. API issues? Try the "Test API Connection" button on the Auth page

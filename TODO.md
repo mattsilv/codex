@@ -1,68 +1,47 @@
-# Codex Monorepo Refactoring TODO List
+# Codex Project TODO List
 
-## Initial Setup
-- [x] Create TODO.md with high-level tasks
-- [x] Setup monorepo structure (frontend & backend folders)
-- [x] Setup Cloudflare Workers environment
-- [x] Configure necessary dependencies
+## Critical Backend Issues (Blocking)
+- [ ] Fix backend server startup issues - currently failing to start properly
+  - [ ] Debug "Cannot read properties of undefined (reading 'fetch')" error
+  - [ ] Check Cloudflare Workers configuration in wrangler.toml
+  - [ ] Verify all bindings (CONTENT_STORE, DB) are properly configured
+  - [ ] Check if D1 database is being created and migrations applied correctly
 
-## Backend Implementation
-- [x] Setup D1 database with Drizzle ORM
-- [x] Create database schema and migrations
-- [x] Implement authentication API (JWT-based)
-- [x] Implement CORS middleware
-- [x] Implement Prompts API
-- [x] Implement Responses API
-- [x] Setup R2 storage for prompt/response content
-- [x] Create utils for content storage/retrieval
+## Authentication System
+- [ ] Fix login/registration functionality not working
+  - [ ] Debug form submission issues
+  - [ ] Test API endpoints directly using curl/Postman
+  - [ ] Verify JWT token generation is working properly
 
-## Frontend Implementation
-- [x] Create API client utilities
-- [x] Update auth context to use backend authentication
-- [x] Update prompts hooks to use API
-- [x] Update responses hooks to use API
-- [x] Maintain localStorage as a fallback/offline mechanism
-- [x] Move all frontend components to the frontend folder
-- [x] Update imports to use new paths (@shared aliases)
-- [x] Test API integration with local backend
+## Development Environment
+- [ ] Set up reliable local development workflow
+  - [ ] Fix backend development server
+  - [ ] Test seeding functionality
+  - [ ] Create simple way to reset local database when needed
 
-## Development & Testing
-- [x] Setup local development environment
-- [x] Configure wrangler.toml
-- [x] Create test data and scenarios
-- [x] Create test scripts for frontend and backend
-- [x] Test full stack locally
-- [x] Add error handling for API failures
-- [x] Add loading states for API requests
+## Data Migration
+- [ ] Implement localStorage to backend database migration
+  - [ ] Test migration functionality once login is working
+  - [ ] Add progress indicators for migration process
+  - [ ] Ensure proper error handling for migration failures
 
-## Post-MVP Follow-ups
-- [ ] Implement proper input validation
-- [ ] Add request rate limiting
-- [ ] Enhance security (CSRF protection, etc.)
-- [ ] Add detailed error handling
-- [ ] Setup proper CORS for production
-- [ ] Add monitoring and logging
-- [ ] Implement backup strategy for D1 database
-- [ ] Add proper UI for loading/error states
+## Testing
+- [ ] Create a test plan for all key features
+  - [ ] Authentication (login, registration, profile)
+  - [ ] Prompt CRUD operations
+  - [ ] Response CRUD operations
+  - [ ] Data migration from localStorage
 
-## Deployment
-- [ ] Deploy backend to Cloudflare Workers
-- [ ] Deploy frontend to Cloudflare Pages or Netlify
-- [ ] Configure production environment variables
-- [ ] Setup custom domain (codex.silv.app)
+## Next Work Session Priorities
+1. Focus on getting backend server running reliably
+2. Test authentication API endpoints directly
+3. Fix login/registration functionality
+4. Test data seeding and migration
 
-## Next Steps (Specific Tasks)
-1. ✅ Complete the transition of all frontend files to src/frontend directory
-2. ✅ Create a script to help with the migration of existing localStorage data to the backend
-3. ✅ Create test data and scenarios for testing
-4. ✅ Add UI component for localStorage data migration
-5. ✅ Create frontend and backend test utilities
-6. ✅ Run the backend and frontend tests
-7. ✅ Fix any issues found during testing
-8. ✅ Test API integration with local backend
-9. ✅ Create API test page for quick testing
-10. ✅ Add UI indicators for network operations (loading, success, error states)
-11. ✅ Implement proper error handling for network failures
-12. Test the full authentication flow
-13. Add form validation for all forms
-14. Create better error messages for users
+## Troubleshooting Steps for Next Session
+1. Check wrangler logs during startup for detailed error messages
+2. Verify all required env bindings in wrangler.toml
+3. Try running with --verbose flag: `npx wrangler dev --verbose`
+4. Check Node.js version compatibility (ensure Node 18+)
+5. Try manually creating the D1 database: `npx wrangler d1 create codex_db --local`
+6. Test backend API endpoints directly with curl to isolate frontend vs backend issues

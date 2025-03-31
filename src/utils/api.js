@@ -1,230 +1,236 @@
-// For MVP, we'll use localStorage instead of real API calls
-// This file is a placeholder for future API integration
+// API client for Codex
+export const API_URL = 'http://localhost:8787/api';
+
+// Helper function to handle API responses
+const handleResponse = async (response) => {
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error || `API error: ${response.status}`);
+  }
+  return response.json();
+};
+
+// Function to get auth headers
+const getAuthHeaders = () => {
+  const token = localStorage.getItem('authToken');
+  return token ? { 'Authorization': `Bearer ${token}` } : {};
+};
+
+// Function to migrate localStorage data to the API
+export const migrateLocalData = async () => {
+  try {
+    // Check if we have data to migrate
+    const storedPrompts = localStorage.getItem('prompts');
+    const storedResponses = localStorage.getItem('responses');
+    
+    if (!storedPrompts) return { success: true, migrated: false, message: 'No local data to migrate' };
+    
+    // Get the authentication token
+    const token = localStorage.getItem('authToken');
+    if (!token) return { success: false, message: 'Not authenticated, please login first' };
+    
+    const parsedPrompts = JSON.parse(storedPrompts);
+    const parsedResponses = storedResponses ? JSON.parse(storedResponses) : [];
+    
+    // Migrate each prompt and its responses
+    let migratedPrompts = 0;
+    let migratedResponses = 0;
+    
+    for (const prompt of parsedPrompts) {
+      // Create the prompt
+      const newPrompt = await api.prompts.create({
+        title: prompt.title,
+        content: prompt.content,
+        isPublic: prompt.isPublic || false,
+        tags: prompt.tags || []
+      });
+      
+      migratedPrompts++;
+      
+      // Find responses for this prompt and migrate them
+      const promptResponses = parsedResponses.filter(r => r.promptId === prompt.id);
+      for (const response of promptResponses) {
+        await api.responses.create({
+          promptId: newPrompt.id,
+          content: response.content,
+          modelName: response.modelName,
+          isMarkdown: response.isMarkdown || true
+        });
+        migratedResponses++;
+      }
+    }
+    
+    return {
+      success: true,
+      migrated: true,
+      migratedPrompts,
+      migratedResponses,
+      message: `Successfully migrated ${migratedPrompts} prompts and ${migratedResponses} responses`
+    };
+  } catch (error) {
+    console.error('Migration failed:', error);
+    return {
+      success: false,
+      message: `Migration failed: ${error.message}`
+    };
+  }
+};
 
 export const api = {
   // Authentication
   auth: {
     login: async (credentials) => {
-      // Simulate API call
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          // For MVP, just return the credentials with an ID
-          resolve({
-            ...credentials,
-            id: crypto.randomUUID()
-          });
-        }, 500);
+      const response = await fetch(`${API_URL}/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(credentials)
       });
+      return handleResponse(response);
     },
+    
     register: async (userData) => {
-      // Simulate API call
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          // For MVP, just return the user data with an ID
-          resolve({
-            ...userData,
-            id: crypto.randomUUID()
-          });
-        }, 500);
+      const response = await fetch(`${API_URL}/auth/register`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(userData)
       });
+      return handleResponse(response);
     },
+    
+    getProfile: async () => {
+      const response = await fetch(`${API_URL}/auth/me`, {
+        headers: {
+          ...getAuthHeaders(),
+          'Content-Type': 'application/json'
+        }
+      });
+      return handleResponse(response);
+    },
+    
+    updateProfile: async (profileData) => {
+      const response = await fetch(`${API_URL}/auth/me`, {
+        method: 'PUT',
+        headers: {
+          ...getAuthHeaders(),
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(profileData)
+      });
+      return handleResponse(response);
+    }
   },
   
   // Prompts
   prompts: {
-    getAll: async (userId) => {
-      // In a real API, we would fetch from the server
-      // For MVP, we'll just read from localStorage
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          const storedPrompts = localStorage.getItem('prompts');
-          if (storedPrompts) {
-            const parsedPrompts = JSON.parse(storedPrompts);
-            resolve(parsedPrompts.filter(prompt => prompt.userId === userId));
-          } else {
-            resolve([]);
-          }
-        }, 300);
+    getAll: async () => {
+      const response = await fetch(`${API_URL}/prompts`, {
+        headers: getAuthHeaders()
       });
+      return handleResponse(response);
     },
     
     get: async (id) => {
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          const storedPrompts = localStorage.getItem('prompts');
-          if (storedPrompts) {
-            const parsedPrompts = JSON.parse(storedPrompts);
-            resolve(parsedPrompts.find(prompt => prompt.id === id) || null);
-          } else {
-            resolve(null);
-          }
-        }, 300);
+      const response = await fetch(`${API_URL}/prompts/${id}`, {
+        headers: getAuthHeaders()
       });
+      return handleResponse(response);
     },
     
     create: async (promptData) => {
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          const newPrompt = {
-            ...promptData,
-            id: crypto.randomUUID(),
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
-          };
-          
-          const storedPrompts = localStorage.getItem('prompts');
-          let updatedPrompts = [];
-          if (storedPrompts) {
-            updatedPrompts = [...JSON.parse(storedPrompts), newPrompt];
-          } else {
-            updatedPrompts = [newPrompt];
-          }
-          localStorage.setItem('prompts', JSON.stringify(updatedPrompts));
-          
-          resolve(newPrompt);
-        }, 300);
+      const response = await fetch(`${API_URL}/prompts`, {
+        method: 'POST',
+        headers: {
+          ...getAuthHeaders(),
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(promptData)
       });
+      return handleResponse(response);
     },
     
     update: async (id, promptData) => {
-      return new Promise((resolve, reject) => {
-        setTimeout(() => {
-          const storedPrompts = localStorage.getItem('prompts');
-          if (!storedPrompts) {
-            reject(new Error('No prompts found'));
-            return;
-          }
-          
-          const parsedPrompts = JSON.parse(storedPrompts);
-          const promptIndex = parsedPrompts.findIndex(p => p.id === id);
-          
-          if (promptIndex === -1) {
-            reject(new Error('Prompt not found'));
-            return;
-          }
-          
-          const updatedPrompt = {
-            ...parsedPrompts[promptIndex],
-            ...promptData,
-            updatedAt: new Date().toISOString()
-          };
-          
-          parsedPrompts[promptIndex] = updatedPrompt;
-          localStorage.setItem('prompts', JSON.stringify(parsedPrompts));
-          
-          resolve(updatedPrompt);
-        }, 300);
+      const response = await fetch(`${API_URL}/prompts/${id}`, {
+        method: 'PUT',
+        headers: {
+          ...getAuthHeaders(),
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(promptData)
       });
+      return handleResponse(response);
     },
     
     delete: async (id) => {
-      return new Promise((resolve, reject) => {
-        setTimeout(() => {
-          const storedPrompts = localStorage.getItem('prompts');
-          if (!storedPrompts) {
-            reject(new Error('No prompts found'));
-            return;
-          }
-          
-          const parsedPrompts = JSON.parse(storedPrompts);
-          const filteredPrompts = parsedPrompts.filter(p => p.id !== id);
-          
-          localStorage.setItem('prompts', JSON.stringify(filteredPrompts));
-          
-          resolve(true);
-        }, 300);
+      const response = await fetch(`${API_URL}/prompts/${id}`, {
+        method: 'DELETE',
+        headers: getAuthHeaders()
       });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Delete failed: ${response.status}`);
+      }
+      
+      return true;
     }
   },
   
   // Responses
   responses: {
     getAll: async (promptId) => {
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          const storedResponses = localStorage.getItem('responses');
-          if (storedResponses) {
-            const parsedResponses = JSON.parse(storedResponses);
-            resolve(parsedResponses.filter(response => response.promptId === promptId));
-          } else {
-            resolve([]);
-          }
-        }, 300);
+      const response = await fetch(`${API_URL}/prompts/${promptId}/responses`, {
+        headers: getAuthHeaders()
       });
+      return handleResponse(response);
     },
     
-    create: async (responseData) => {
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          const newResponse = {
-            ...responseData,
-            id: crypto.randomUUID(),
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
-          };
-          
-          const storedResponses = localStorage.getItem('responses');
-          let updatedResponses = [];
-          if (storedResponses) {
-            updatedResponses = [...JSON.parse(storedResponses), newResponse];
-          } else {
-            updatedResponses = [newResponse];
-          }
-          localStorage.setItem('responses', JSON.stringify(updatedResponses));
-          
-          resolve(newResponse);
-        }, 300);
+    get: async (promptId, responseId) => {
+      const response = await fetch(`${API_URL}/prompts/${promptId}/responses/${responseId}`, {
+        headers: getAuthHeaders()
       });
+      return handleResponse(response);
     },
     
-    update: async (id, responseData) => {
-      return new Promise((resolve, reject) => {
-        setTimeout(() => {
-          const storedResponses = localStorage.getItem('responses');
-          if (!storedResponses) {
-            reject(new Error('No responses found'));
-            return;
-          }
-          
-          const parsedResponses = JSON.parse(storedResponses);
-          const responseIndex = parsedResponses.findIndex(r => r.id === id);
-          
-          if (responseIndex === -1) {
-            reject(new Error('Response not found'));
-            return;
-          }
-          
-          const updatedResponse = {
-            ...parsedResponses[responseIndex],
-            ...responseData,
-            updatedAt: new Date().toISOString()
-          };
-          
-          parsedResponses[responseIndex] = updatedResponse;
-          localStorage.setItem('responses', JSON.stringify(parsedResponses));
-          
-          resolve(updatedResponse);
-        }, 300);
+    create: async (promptId, responseData) => {
+      const response = await fetch(`${API_URL}/prompts/${promptId}/responses`, {
+        method: 'POST',
+        headers: {
+          ...getAuthHeaders(),
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(responseData)
       });
+      return handleResponse(response);
     },
     
-    delete: async (id) => {
-      return new Promise((resolve, reject) => {
-        setTimeout(() => {
-          const storedResponses = localStorage.getItem('responses');
-          if (!storedResponses) {
-            reject(new Error('No responses found'));
-            return;
-          }
-          
-          const parsedResponses = JSON.parse(storedResponses);
-          const filteredResponses = parsedResponses.filter(r => r.id !== id);
-          
-          localStorage.setItem('responses', JSON.stringify(filteredResponses));
-          
-          resolve(true);
-        }, 300);
+    update: async (promptId, responseId, responseData) => {
+      const response = await fetch(`${API_URL}/prompts/${promptId}/responses/${responseId}`, {
+        method: 'PUT',
+        headers: {
+          ...getAuthHeaders(),
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(responseData)
       });
+      return handleResponse(response);
+    },
+    
+    delete: async (promptId, responseId) => {
+      const response = await fetch(`${API_URL}/prompts/${promptId}/responses/${responseId}`, {
+        method: 'DELETE',
+        headers: getAuthHeaders()
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Delete failed: ${response.status}`);
+      }
+      
+      return true;
     }
   }
 };

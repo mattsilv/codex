@@ -1,14 +1,12 @@
-import { useEffect } from 'preact/hooks';
+import { useContext } from 'preact/hooks';
 import { route } from 'preact-router';
+import { AuthContext } from '../context/AuthContext';
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
 import Button from '../components/ui/Button';
 
 export default function Home() {
-  // Automatically redirect to dashboard since we're always authenticated now
-  useEffect(() => {
-    route('/dashboard');
-  }, []);
+  const { isAuthenticated } = useContext(AuthContext);
 
   return (
     <div>
@@ -21,7 +19,14 @@ export default function Home() {
             Language Models to the same prompts.
           </p>
           <div style={{ marginTop: '2rem' }}>
-            <Button onClick={() => route('/dashboard')}>Go to Dashboard</Button>
+            {isAuthenticated ? (
+              <Button onClick={() => route('/dashboard')}>Go to Dashboard</Button>
+            ) : (
+              <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+                <Button onClick={() => route('/auth')}>Login</Button>
+                <Button variant="outline" onClick={() => route('/auth')}>Register</Button>
+              </div>
+            )}
           </div>
         </section>
 
