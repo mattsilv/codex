@@ -1,0 +1,22 @@
+name = "codex"
+compatibility_date = "2025-03-30"
+main = "src/backend/index.js"
+
+# Development
+[vars]
+ENVIRONMENT = "development"
+
+# D1 Database configuration
+[[d1_databases]]
+binding = "DB"
+database_name = "codex_db"
+database_id = "placeholder-database-id" # This will be replaced with the actual ID after creation
+
+# R2
+[[r2_buckets]]
+binding = "CONTENT_STORE"
+bucket_name = "codex-content"
+
+# Asset handling
+[site]
+bucket = "./dist"

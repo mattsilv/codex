@@ -1,0 +1,198 @@
+/* Base markdown container */
+.markdown-preview {
+  border: 1px solid var(--border);
+  padding: var(--space-md);
+  border-radius: var(--radius-sm);
+  background-color: var(--card-background-color);
+  font-size: calc(var(--font-base) * var(--markdown-scale));
+  line-height: 1.5;
+  overflow-wrap: break-word;
+  max-width: 100%;
+}
+
+/* Size variations */
+.markdown-small {
+  --markdown-scale: 0.5; /* 50% smaller */
+  padding: var(--space-sm);
+}
+
+.markdown-large {
+  --markdown-scale: 0.7; /* 30% smaller */
+  padding: var(--space-lg);
+}
+
+/* Compact variant with tighter spacing */
+.markdown-compact {
+  --markdown-compact-factor: 0.7; /* Reduce spacing by 30% */
+}
+
+.markdown-compact p, 
+.markdown-compact ul, 
+.markdown-compact ol,
+.markdown-compact pre,
+.markdown-compact blockquote {
+  margin-bottom: calc(var(--space-sm) * var(--markdown-compact-factor));
+}
+
+/* Preview heading */
+.preview-heading {
+  color: var(--primary);
+  margin-top: 0;
+  margin-bottom: var(--space-xs);
+  font-size: var(--font-sm);
+  border-bottom: 1px dashed var(--primary-focus);
+  padding-bottom: var(--space-xs);
+}
+
+/* Content textarea */
+.content-textarea {
+  width: 100%;
+  font-family: inherit;
+  resize: vertical;
+}
+
+/* Heading scaling */
+.markdown-preview h1, 
+.markdown-preview h2, 
+.markdown-preview h3,
+.markdown-preview h4, 
+.markdown-preview h5, 
+.markdown-preview h6 {
+  margin-top: 0.5em;
+  margin-bottom: 0.5em;
+  line-height: 1.2;
+  font-weight: 600;
+}
+
+.markdown-preview h1 { font-size: calc(2.0em * var(--markdown-scale)); }
+.markdown-preview h2 { font-size: calc(1.8em * var(--markdown-scale)); }
+.markdown-preview h3 { font-size: calc(1.6em * var(--markdown-scale)); }
+.markdown-preview h4 { font-size: calc(1.4em * var(--markdown-scale)); }
+.markdown-preview h5 { font-size: calc(1.2em * var(--markdown-scale)); }
+.markdown-preview h6 { font-size: calc(1.0em * var(--markdown-scale)); }
+
+/* Lists */
+.markdown-preview ul,
+.markdown-preview ol {
+  padding-left: calc(1.5em * var(--markdown-scale));
+  margin-bottom: calc(1em * var(--markdown-scale));
+}
+
+.markdown-preview li {
+  margin-bottom: calc(0.25em * var(--markdown-scale));
+}
+
+.markdown-preview li > ul,
+.markdown-preview li > ol {
+  margin-top: calc(0.25em * var(--markdown-scale));
+  margin-bottom: 0;
+}
+
+/* Paragraphs and spacing */
+.markdown-preview p {
+  margin-bottom: calc(1em * var(--markdown-scale));
+}
+
+/* Code blocks */
+.markdown-preview pre {
+  background-color: rgba(0, 0, 0, 0.05);
+  padding: calc(1em * var(--markdown-scale));
+  border-radius: var(--radius-sm);
+  overflow-x: auto;
+  font-size: calc(0.9em * var(--markdown-scale));
+  margin-bottom: calc(1em * var(--markdown-scale));
+}
+
+.markdown-preview code {
+  font-family: monospace;
+  padding: calc(0.2em * var(--markdown-scale)) calc(0.4em * var(--markdown-scale));
+  background-color: rgba(0, 0, 0, 0.05);
+  border-radius: var(--radius-sm);
+  font-size: calc(0.9em * var(--markdown-scale));
+}
+
+.markdown-preview pre code {
+  padding: 0;
+  background-color: transparent;
+}
+
+/* Blockquotes */
+.markdown-preview blockquote {
+  border-left: calc(0.25em * var(--markdown-scale)) solid var(--primary);
+  padding-left: calc(1em * var(--markdown-scale));
+  margin-left: 0;
+  margin-right: 0;
+  font-style: italic;
+  color: var(--muted-color);
+}
+
+/* Tables */
+.markdown-preview table {
+  border-collapse: collapse;
+  width: 100%;
+  margin-bottom: calc(1em * var(--markdown-scale));
+  font-size: calc(0.9em * var(--markdown-scale));
+}
+
+.markdown-preview th,
+.markdown-preview td {
+  border: 1px solid var(--border);
+  padding: calc(0.5em * var(--markdown-scale));
+}
+
+.markdown-preview th {
+  background-color: rgba(0, 0, 0, 0.05);
+  font-weight: bold;
+  text-align: left;
+}
+
+/* Links */
+.markdown-preview a {
+  color: var(--primary);
+  text-decoration: underline;
+}
+
+.markdown-preview a:hover {
+  color: var(--primary-hover);
+}
+
+/* Images */
+.markdown-preview img {
+  max-width: 100%;
+  height: auto;
+  margin: calc(0.5em * var(--markdown-scale)) 0;
+  border-radius: var(--radius-sm);
+}
+
+/* Horizontal rule */
+.markdown-preview hr {
+  border: 0;
+  border-top: 1px solid var(--border);
+  margin: calc(1.5em * var(--markdown-scale)) 0;
+}
+
+/* Adjust spacing for better readability */
+.markdown-preview > *:first-child {
+  margin-top: 0;
+}
+
+.markdown-preview > *:last-child {
+  margin-bottom: 0;
+}
+
+/* Markdown preview in edit mode */
+.markdown-edit-preview {
+  border-top: 1px dashed var(--primary-focus);
+  margin-top: var(--space-md);
+  padding-top: var(--space-md);
+}
+
+/* Fade gradient for collapsed content */
+.markdown-fade-bottom {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3rem;
+  background: linear-gradient(transparent, var(--card-background-color));
+}

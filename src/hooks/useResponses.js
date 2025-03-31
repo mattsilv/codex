@@ -36,7 +36,17 @@ export default function useResponses(promptId) {
     return null;
   };
 
+  const modelExists = (modelName) => {
+    // Check if a response with this model name already exists for this prompt
+    return responses.some(response => response.modelName.toLowerCase() === modelName.toLowerCase());
+  };
+
   const createResponse = (responseData) => {
+    // Check if a response with this model already exists
+    if (modelExists(responseData.modelName)) {
+      throw new Error(`A response with the model "${responseData.modelName}" already exists for this prompt.`);
+    }
+
     const newResponse = {
       ...responseData,
       id: crypto.randomUUID(),

@@ -1,80 +1,37 @@
 #!/bin/bash
 
-# Initialize project
-pnpm init -y
+# Codex Monorepo Setup Script
+
+echo "📦 Setting up Codex monorepo..."
 
 # Install dependencies
-pnpm add preact preact-router @picocss/pico
+echo "📚 Installing dependencies..."
+npm install
 
-# Create directory structure
-mkdir -p src/components/layout
-mkdir -p src/components/auth
-mkdir -p src/components/prompt
-mkdir -p src/components/response
-mkdir -p src/components/ui
-mkdir -p src/pages
-mkdir -p src/hooks
-mkdir -p src/utils
-mkdir -p src/context
-mkdir -p src/styles
+# Create Cloudflare D1 database
+echo "🗄️ Creating Cloudflare D1 database..."
+npx wrangler d1 create codex_db
 
-# Create base files
-touch src/index.jsx src/App.jsx src/styles/custom.css
+# Save the database ID
+echo "⚙️ Please enter your D1 database ID shown above:"
+read DB_ID
 
-# Create layout components
-touch src/components/layout/Header.jsx
-touch src/components/layout/Footer.jsx
-touch src/components/layout/MainLayout.jsx
-touch src/components/layout/AuthLayout.jsx
+# Update wrangler.toml with database ID
+sed -i'' -e "s/placeholder-database-id/$DB_ID/g" wrangler.toml
+echo "✅ Updated wrangler.toml with database ID"
 
-# Create auth components
-touch src/components/auth/LoginForm.jsx
-touch src/components/auth/RegisterForm.jsx
-touch src/components/auth/PasswordResetForm.jsx
+# Create R2 bucket
+echo "📦 Creating Cloudflare R2 bucket..."
+npx wrangler r2 bucket create codex-content
 
-# Create prompt components
-touch src/components/prompt/PromptCard.jsx
-touch src/components/prompt/PromptForm.jsx
-touch src/components/prompt/PromptList.jsx
-touch src/components/prompt/PromptDetail.jsx
+# Apply migrations
+echo "🧩 Applying database migrations..."
+npx wrangler d1 migrations apply codex_db
 
-# Create response components
-touch src/components/response/ResponseForm.jsx
-touch src/components/response/ResponseCard.jsx
-touch src/components/response/ResponseList.jsx
-touch src/components/response/MarkdownPreview.jsx
-
-# Create UI components
-touch src/components/ui/Button.jsx
-touch src/components/ui/Input.jsx
-touch src/components/ui/Modal.jsx
-touch src/components/ui/Toast.jsx
-touch src/components/ui/ShareButton.jsx
-touch src/components/ui/ToggleSwitch.jsx
-
-# Create page components
-touch src/pages/Home.jsx
-touch src/pages/Auth.jsx
-touch src/pages/Dashboard.jsx
-touch src/pages/PromptCreate.jsx
-touch src/pages/PromptDetail.jsx
-touch src/pages/SharedPrompt.jsx
-touch src/pages/NotFound.jsx
-
-# Create hooks
-touch src/hooks/useAuth.js
-touch src/hooks/usePrompts.js
-touch src/hooks/useResponses.js
-touch src/hooks/useMarkdown.js
-
-# Create utility files
-touch src/utils/api.js
-touch src/utils/auth.js
-touch src/utils/markdownDetector.js
-touch src/utils/markdownParser.js
-
-# Create context files
-touch src/context/AuthContext.jsx
-touch src/context/AppContext.jsx
-
-echo "Project scaffolding complete!"
+echo "🚀 Setup complete! You can now start development with:"
+echo "   npm run dev            # Frontend development"
+echo "   npm run dev:worker     # Backend development"
+echo ""
+echo "🔍 To view your database in the Cloudflare dashboard:"
+echo "   https://dash.cloudflare.com/workers/d1"
+echo ""

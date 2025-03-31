@@ -1,0 +1,71 @@
+/* Button variants using Pico's naming */
+.outline {
+  /* Already handled by Pico */
+}
+
+.secondary {
+  /* Already handled by Pico */
+}
+
+.contrast {
+  /* Already handled by Pico */
+}
+
+/* Custom button variants if needed */
+.btn-danger {
+  background-color: var(--pico-del-color, #e53935);
+  border-color: var(--pico-del-color, #e53935);
+  color: var(--pico-del-background-color, #ffffff);
+}
+
+/* Simplified animation for feedback */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Simple icon button */
+.btn-icon {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  min-width: unset;
+}
+
+/* Action buttons container */
+.action-buttons {
+  display: flex;
+  gap: var(--space-xs);
+  flex-wrap: wrap;
+}
+
+/* Toggle container */
+.toggle-container {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+/* Pill buttons (full rounded edges) */
+.btn-pill {
+  border-radius: 9999px;
+}
+
+/* CSS custom properties for specific button areas */
+:root {
+  --header-btn-height: 36px;
+  --header-btn-min-width: 100px;
+  --action-btn-height: 36px;
+  --action-btn-min-width: 80px;
+}
+
+/* Header buttons specific styling */
+.header-btn,
+header nav a.btn,
+header nav .btn {
+  height: 36px;
+  min-width: var(--header-btn-min-width);
+  align-self: center;
+  margin-top: 0;
+  margin-bottom: 0;
+}
