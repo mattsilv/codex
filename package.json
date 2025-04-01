@@ -27,11 +27,13 @@
     "check:dns": "./scripts/check-dns.sh",
     "verify:deployment": "./scripts/verify-deployment.sh",
     "test": "./tests/run-tests.sh",
-    "test:api": "node tests/integration/test-api.js",
+    "test:api": "node tests/api/index.js",
     "test:unit": "node tests/unit/test.js",
     "test:e2e": "node tests/e2e/test-full.js",
     "test:registration": "./tests/run-registration-test.sh",
-    "test:tailwind": "./tests/run-tailwind-test.sh"
+    "test:tailwind": "./tests/run-tailwind-test.sh",
+    "test:auth": "node tests/auth/index.js",
+    "test:oauth": "node tests/oauth/index.js"
   },
   "dependencies": {
     "@lucia-auth/adapter-sqlite": "^3.0.2",
