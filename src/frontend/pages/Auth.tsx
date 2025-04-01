@@ -5,14 +5,8 @@ import useAuth from '../hooks/useAuth';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import { API_URL } from '../utils/api';
-import { migrateLegacyData } from '../utils/migrateLegacyData';
 import { AuthContext } from '../context/AuthContext';
 import useToast from '../hooks/useToast';
-
-interface MigrationStatus {
-  success: boolean;
-  message: string;
-}
 
 interface ApiStatus {
   message: string;
@@ -27,8 +21,6 @@ export default function Auth(): JSX.Element {
   const [username, setUsername] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
-  const [migrationStatus, setMigrationStatus] =
-    useState<MigrationStatus | null>(null);
   const [apiStatus, setApiStatus] = useState<ApiStatus>({
     message: `API URL: ${API_URL}`,
     working: null,
@@ -39,7 +31,7 @@ export default function Auth(): JSX.Element {
     const checkApi = async (): Promise<void> => {
       try {
         const startTime = Date.now();
-        const response = await fetch(`${API_URL}/seed-test-data`);
+        const response = await fetch(`${API_URL}/health`);
         const endTime = Date.now();
 
         if (response.ok) {
@@ -105,49 +97,29 @@ export default function Auth(): JSX.Element {
         password: '******',
       });
 
-      // Try direct API call instead of using context methods
-      const endpoint = isLogin ? 'login' : 'register';
-      console.log(`Making direct fetch to ${API_URL}/auth/${endpoint}`);
+      // Use the context methods for login/register instead of direct API calls
+      // This ensures proper cookie handling and state management
+      let result;
+      
+      if (isLogin) {
+        console.log('Using AuthContext login method');
+        result = await login(email, password);
+      } else {
+        console.log('Using AuthContext register method');
+        result = await register(email, username, password);
+      }
+      
+      console.log('Auth operation result:', result);
 
-      const payload = isLogin
-        ? { email, password }
-        : { email, username, password };
-
-      const response = await fetch(`${API_URL}/auth/${endpoint}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-      });
-
-      console.log('Direct API response status:', response.status);
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error('Direct API error response:', errorData);
-        setError(errorData.error || `API error: ${response.status}`);
+      if (!result.success) {
+        setError(result.error || 'Authentication failed');
         return;
       }
-
-      // Success path
-      const data = await response.json();
-      console.log('Direct API success response:', data);
-
-      // Store auth data
-      localStorage.setItem('authToken', data.token);
-      localStorage.setItem('authUser', JSON.stringify(data.user));
-
-      // Try to migrate data
-      console.log('Authentication successful, attempting data migration');
-      const result = await migrateLegacyData();
-      setMigrationStatus(result as MigrationStatus);
-      console.log('Migration result:', result);
-
-      // Redirect to dashboard
-      setTimeout(() => {
-        window.location.href = '/dashboard'; // Force full page reload
-      }, 2000);
+      
+      // Success - AuthContext will manage the authenticated state via cookies
+      // The useEffect watching isAuthenticated will handle redirection
+      console.log('Authentication successful, waiting for redirect');
+      
     } catch (err) {
       console.error('Authentication error:', err);
       setError(`Network error: ${(err as Error).message}`);
@@ -167,31 +139,88 @@ export default function Auth(): JSX.Element {
     try {
       setError(null);
       setIsSubmitting(true);
-
-      // Try a simple POST request to test the login endpoint directly
-      const testResponse = await fetch(`${API_URL}/auth/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: 'alice@example.com',
-          password: 'password123',
-        }),
-      });
-
-      let resultText: string;
+      
+      console.log('=== AUTHENTICATION TEST SUITE ===');
+      
+      // 1. First test the health endpoint
+      console.log('\n📡 Testing API Health');
+      console.log(`Endpoint: ${API_URL}/health`);
+      
       try {
-        const result = await testResponse.json();
-        resultText = JSON.stringify(result).substring(0, 100);
-      } catch (e) {
-        resultText = await testResponse.text();
+        const healthResponse = await fetch(`${API_URL}/health`, {
+          credentials: 'include',
+          mode: 'cors',
+          cache: 'no-cache' // Don't cache health checks
+        });
+        
+        console.log(`Health check status: ${healthResponse.status}`);
+        
+        if (healthResponse.ok) {
+          console.log('✅ Health endpoint reachable');
+        } else {
+          console.warn(`⚠️ Health endpoint returned ${healthResponse.status}`);
+        }
+      } catch (healthError) {
+        console.error('❌ Health check failed:', healthError);
       }
-
-      setApiStatus({
-        message: `API login test (status ${testResponse.status}): ${resultText}${resultText.length > 100 ? '...' : ''}`,
-        working: testResponse.ok,
-      });
+      
+      // 2. Test the authentication endpoint directly
+      console.log('\n🔐 Testing Authentication API');
+      console.log(`Endpoint: ${API_URL}/auth/me`);
+      
+      try {
+        const authResponse = await fetch(`${API_URL}/auth/me`, {
+          credentials: 'include',
+          mode: 'cors'
+        });
+        
+        console.log(`Auth check status: ${authResponse.status}`);
+        console.log('Headers received:', Object.fromEntries(authResponse.headers.entries()));
+        
+        if (authResponse.ok) {
+          const userData = await authResponse.json();
+          console.log('✅ Already authenticated as:', userData.email);
+          setApiStatus({
+            message: `Already authenticated as: ${userData.email}`,
+            working: true,
+          });
+          return;
+        } else {
+          console.log('Not currently authenticated, proceeding to login test');
+        }
+      } catch (authError) {
+        console.error('❌ Auth check failed:', authError);
+      }
+      
+      // 3. Test a login request with proper CORS settings
+      console.log('\n🔑 Testing Login API');
+      console.log(`Endpoint: ${API_URL}/auth/login`);
+      
+      try {
+        // Use the context login method
+        console.log('Attempting login via AuthContext...');
+        const result = await login('alice@example.com', 'password123');
+        
+        if (result.success) {
+          console.log('✅ Login successful via AuthContext');
+          setApiStatus({
+            message: 'Login successful! Cookie-based authentication is working properly.',
+            working: true,
+          });
+        } else {
+          console.error('❌ Login failed via AuthContext:', result.error);
+          setApiStatus({
+            message: `Login failed: ${result.error}`,
+            working: false,
+          });
+        }
+      } catch (loginError) {
+        console.error('❌ Login test failed:', loginError);
+        setApiStatus({
+          message: `Login test error: ${(loginError as Error).message}`,
+          working: false,
+        });
+      }
     } catch (err) {
       console.error('API test error:', err);
       setApiStatus({
@@ -252,7 +281,7 @@ export default function Auth(): JSX.Element {
                 borderRadius: '4px',
               }}
             >
-              {apiStatus.message}
+              {apiStatus.message || 'Checking API status...'}
             </div>
           )}
 
@@ -268,23 +297,6 @@ export default function Auth(): JSX.Element {
             }}
           >
             {error}
-          </div>
-        )}
-
-        {migrationStatus && (
-          <div
-            className={
-              migrationStatus.success ? 'success-message' : 'error-message'
-            }
-            style={{
-              color: migrationStatus.success ? 'green' : 'red',
-              margin: '1rem 0',
-              padding: '0.5rem',
-              backgroundColor: migrationStatus.success ? '#e8f5e9' : '#ffebee',
-              borderRadius: '4px',
-            }}
-          >
-            {migrationStatus.message}
           </div>
         )}
 
@@ -386,6 +398,51 @@ export default function Auth(): JSX.Element {
             >
               {isLogin ? 'Need an account?' : 'Already have an account?'}
             </a>
+          </div>
+          
+          {/* OAuth login options */}
+          <div style={{ margin: '1.5rem 0', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <div style={{ textAlign: 'center', color: '#666' }}>
+              <span>or</span>
+            </div>
+            
+            {/* Import GoogleLoginButton normally */}
+            <button
+              type="button"
+              onClick={async () => {
+                try {
+                  console.log('Initiating Google OAuth login via AuthContext');
+                  setIsSubmitting(true);
+                  
+                  // Use the loginWithGoogle method from AuthContext
+                  const result = await loginWithGoogle();
+                  
+                  console.log('Received OAuth data from context:', result);
+                  
+                  if (result && result.url) {
+                    console.log('Redirecting to Google OAuth URL:', result.url);
+                    window.location.href = result.url;
+                  } else {
+                    throw new Error('No URL in response from loginWithGoogle');
+                  }
+                } catch (err) {
+                  console.error('Error during Google OAuth init:', err);
+                  setError(`Google login error: ${(err as Error).message}`);
+                } finally {
+                  setIsSubmitting(false);
+                }
+              }}
+              disabled={isSubmitting}
+              className="flex items-center justify-center gap-2 w-full py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            >
+              <svg className="h-5 w-5" viewBox="0 0 24 24">
+                <path
+                  d="M12.545 10.239v3.821h5.445c-.712 2.315-2.647 3.972-5.445 3.972-3.332 0-6.033-2.701-6.033-6.032s2.701-6.032 6.033-6.032c1.498 0 2.866.549 3.921 1.453l2.814-2.814C17.503 2.988 15.139 2 12.545 2 7.021 2 2.543 6.477 2.543 12s4.478 10 10.002 10c8.396 0 10.249-7.85 9.426-11.748l-9.426-.013z"
+                  fill="#4285F4"
+                />
+              </svg>
+              Continue with Google
+            </button>
           </div>
         </form>
 

@@ -181,7 +181,7 @@ export default {
    } else if (environment === 'staging') {
      allowedOrigins = ['https://staging-app-domain.com'];
    } else {
-     allowedOrigins = ['http://localhost:3000'];
+     allowedOrigins = ['http://localhost:3001'];
    }
    ```
 

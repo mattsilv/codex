@@ -1,135 +1,162 @@
 import { h, JSX } from 'preact';
-import { useState } from 'preact/hooks';
-import { route } from 'preact-router';
-import Input from '../ui/Input';
-import Button from '../ui/Button';
-import useAuth from '../../hooks/useAuth';
-import useToast from '../../hooks/useToast';
-import { validateEmail } from '../../utils/auth';
+import { useState, useContext } from 'preact/hooks';
+import { AuthContext } from '../../context/AuthContext';
+import { GoogleLoginButton } from './GoogleLoginButton';
 
 interface FormData {
   email: string;
   password: string;
 }
 
-interface FormErrors {
-  email?: string;
-  password?: string;
-  form?: string;
+interface LoginFormProps {
+  onSuccess?: () => void;
+  onRegisterClick?: () => void;
 }
 
-export default function LoginForm(): JSX.Element {
-  const { login } = useAuth();
-  const { showError, showSuccess } = useToast();
+export default function LoginForm({
+  onSuccess,
+  onRegisterClick,
+}: LoginFormProps): JSX.Element {
+  const auth = useContext(AuthContext);
   const [formData, setFormData] = useState<FormData>({
-    email: '',
-    password: '',
+    email: 'alice@example.com',
+    password: 'password123',
   });
-  const [errors, setErrors] = useState<FormErrors>({});
-  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState<boolean>(false);
 
-  const handleChange = (
-    e: JSX.TargetedEvent<HTMLInputElement, Event>
-  ): void => {
-    const { name, value } = e.currentTarget;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-
-    // Clear errors as user types
-    if (errors[name as keyof FormErrors]) {
-      setErrors((prev) => ({
-        ...prev,
-        [name]: undefined,
-        form: undefined,
-      }));
-    }
+  const handleChange = (e: Event): void => {
+    const target = e.target as HTMLInputElement;
+    setFormData({
+      ...formData,
+      [target.name]: target.value,
+    });
   };
 
-  const validate = (): boolean => {
-    const newErrors: FormErrors = {};
-
-    if (!formData.email) {
-      newErrors.email = 'Email is required';
-    } else if (!validateEmail(formData.email)) {
-      newErrors.email = 'Invalid email format';
-    }
-
-    if (!formData.password) {
-      newErrors.password = 'Password is required';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSubmit = async (
-    e: JSX.TargetedEvent<HTMLFormElement, Event>
-  ): Promise<void> => {
+  const handleSubmit = async (e: Event): Promise<void> => {
     e.preventDefault();
-
-    if (!validate()) return;
-
-    setIsSubmitting(true);
+    setError(null);
+    setLoading(true);
 
     try {
-      console.log('Attempting login for:', formData.email);
-      const success = await login(formData.email, formData.password);
-
-      if (success) {
-        showSuccess('Login successful! Redirecting to dashboard...');
-        route('/dashboard');
-      } else {
-        setErrors({
-          form: 'Login failed. Please check your credentials and try again.',
-        });
-        showError('Login failed. Please check your credentials and try again.');
+      if (!auth) {
+        throw new Error('Authentication context not available');
       }
-    } catch (error) {
-      console.error('Login error:', error);
-      setErrors({
-        form: 'Login failed. Please try again.',
-      });
-      showError(`Login error: ${(error as Error).message}`);
+
+      const result = await auth.login(formData.email, formData.password);
+
+      console.log('Login result:', result);
+
+      if (result.success) {
+        if (onSuccess) {
+          onSuccess();
+        }
+      } else if (result.requiresVerification) {
+        // User needs to verify email - handled by parent component
+        console.log('Email verification required');
+      } else {
+        setError(result.error || 'Login failed. Please try again.');
+      }
+    } catch (err) {
+      console.error('Login error:', err);
+      setError((err as Error).message || 'An unexpected error occurred');
     } finally {
-      setIsSubmitting(false);
+      setLoading(false);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 max-w-md mx-auto">
-      <h2 className="text-2xl font-bold text-gray-900">Login</h2>
-
-      {errors.form && (
-        <div className="bg-red-50 text-red-700 p-3 rounded-md border border-red-200">
-          {errors.form}
+    <div className="w-full max-w-md">
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div>
+          <label
+            htmlFor="email"
+            className="block text-sm font-medium text-gray-700"
+          >
+            Email
+          </label>
+          <div className="mt-1">
+            <input
+              id="email"
+              name="email"
+              type="email"
+              required
+              className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+              value={formData.email}
+              onChange={handleChange}
+            />
+          </div>
         </div>
-      )}
 
-      <Input
-        label="Email"
-        type="email"
-        name="email"
-        value={formData.email}
-        onChange={handleChange}
-        required
-        error={errors.email}
-      />
+        <div>
+          <label
+            htmlFor="password"
+            className="block text-sm font-medium text-gray-700"
+          >
+            Password
+          </label>
+          <div className="mt-1">
+            <input
+              id="password"
+              name="password"
+              type="password"
+              required
+              className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+              value={formData.password}
+              onChange={handleChange}
+            />
+          </div>
+        </div>
 
-      <Input
-        label="Password"
-        type="password"
-        name="password"
-        value={formData.password}
-        onChange={handleChange}
-        required
-        error={errors.password}
-      />
+        {error && (
+          <div className="bg-red-50 border-l-4 border-red-400 p-4">
+            <div className="flex">
+              <div className="ml-3">
+                <p className="text-sm text-red-700">{error}</p>
+              </div>
+            </div>
+          </div>
+        )}
 
-      <Button type="submit" disabled={isSubmitting} className="w-full">
-        {isSubmitting ? 'Logging in...' : 'Login'}
-      </Button>
-    </form>
+        <div>
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+          >
+            {loading ? 'Logging in...' : 'Log in'}
+          </button>
+        </div>
+        
+        <div className="mt-6">
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-300"></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-2 bg-white text-gray-500">Or continue with</span>
+            </div>
+          </div>
+
+          <div className="mt-6">
+            <GoogleLoginButton />
+          </div>
+        </div>
+      </form>
+
+      <div className="mt-6">
+        <div className="text-center">
+          <span className="text-sm text-gray-600">
+            Don't have an account?{' '}
+          </span>
+          <button
+            onClick={onRegisterClick}
+            className="text-sm font-medium text-indigo-600 hover:text-indigo-500"
+          >
+            Register now
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }

@@ -6,3 +6,6 @@ dist
 .env.local
 .wrangler/
 wrangler.toml
+.vars
+.dev.vars
+docs/archived

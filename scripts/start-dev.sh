@@ -3,6 +3,14 @@
 # Start both backend and frontend servers in background
 echo "Starting Codex development environment..."
 
+# Verify port configuration for OAuth
+FRONTEND_PORT=$(grep 'port:' ../vite.config.js 2>/dev/null || grep 'port:' ./vite.config.js | sed 's/.*port: \([0-9]*\).*/\1/')
+if [ "$FRONTEND_PORT" != "3001" ]; then
+  echo "ERROR: Frontend port in vite.config.js is not set to 3001, which is required for OAuth."
+  echo "Please update the port in vite.config.js to match the Google OAuth configuration."
+  exit 1
+fi
+
 # Test Tailwind CSS configuration before starting services
 ./run-tailwind-test.sh
 
@@ -38,8 +46,8 @@ VITE_PID=$!
 echo ""
 echo "Codex development environment is running:"
 echo "- Backend: http://localhost:8787"
-echo "- Frontend: http://localhost:3000"
-echo "- API Test Page: http://localhost:3000/test.html"
+echo "- Frontend: http://localhost:3001"
+echo "- API Test Page: http://localhost:3001/test.html"
 echo ""
 echo "Press Ctrl+C to stop both servers"
 

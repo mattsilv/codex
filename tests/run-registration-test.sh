@@ -5,7 +5,7 @@
 mkdir -p tests/screenshots
 
 # Check if development server is running
-if ! curl -s http://localhost:3000 > /dev/null; then
+if ! curl -s http://localhost:3001 > /dev/null; then
   echo "Starting development server..."
   # Start the development server in the background
   pnpm run dev &

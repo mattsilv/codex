@@ -42,8 +42,6 @@ export const API_URL: string = (function () {
 export const STORAGE_KEYS = {
   TOKEN: 'codex_token',
   USER: 'codex_user',
-  PROMPTS: 'prompts', // legacy key for localStorage
-  RESPONSES: 'responses', // legacy key for localStorage
 };
 
 // Default LLM models

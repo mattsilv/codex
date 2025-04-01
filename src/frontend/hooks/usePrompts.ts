@@ -22,14 +22,14 @@ export interface PromptInput {
 export interface UsePromptsReturn {
   prompts: Prompt[];
   loading: boolean;
-  getPrompt: (id: string) => Prompt | null;
-  createPrompt: (promptData: PromptInput) => Prompt;
+  getPrompt: (id: string) => Promise<Prompt | null>;
+  createPrompt: (promptData: PromptInput) => Promise<Prompt>;
   updatePrompt: (
     id: string,
     promptData: Partial<PromptInput>
-  ) => Prompt | false;
-  deletePrompt: (id: string) => boolean;
-  refresh: () => void;
+  ) => Promise<Prompt | false>;
+  deletePrompt: (id: string) => Promise<boolean>;
+  refresh: () => Promise<void>;
 }
 
 export default function usePrompts(): UsePromptsReturn {
@@ -39,103 +39,146 @@ export default function usePrompts(): UsePromptsReturn {
 
   useEffect(() => {
     if (user) {
-      loadPrompts();
+      loadPrompts().catch(error => {
+        console.error('Error in loadPrompts effect:', error);
+        setPrompts([]);
+        setLoading(false);
+      });
     } else {
       setPrompts([]);
       setLoading(false);
     }
   }, [user]);
 
-  const loadPrompts = (): void => {
+  const loadPrompts = async (): Promise<void> => {
     setLoading(true);
-    // For MVP: Load from localStorage
-    const storedPrompts = localStorage.getItem('prompts');
-    if (storedPrompts) {
-      const parsedPrompts: Prompt[] = JSON.parse(storedPrompts);
-      // Filter by user
-      setPrompts(parsedPrompts.filter((prompt) => prompt.userId === user?.id));
+    try {
+      // Use API to fetch prompts
+      const response = await fetch(`http://localhost:8787/api/prompts`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setPrompts(data.data || []);
+      } else {
+        console.error('Failed to load prompts:', response.status);
+        setPrompts([]);
+      }
+    } catch (error) {
+      console.error('Error loading prompts:', error);
+      setPrompts([]);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
-  const getPrompt = (id: string): Prompt | null => {
-    const storedPrompts = localStorage.getItem('prompts');
-    if (storedPrompts) {
-      const parsedPrompts: Prompt[] = JSON.parse(storedPrompts);
-      return parsedPrompts.find((prompt) => prompt.id === id) || null;
+  const getPrompt = async (id: string): Promise<Prompt | null> => {
+    try {
+      const response = await fetch(`http://localhost:8787/api/prompts/${id}`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to get prompt: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      return data.data || null;
+    } catch (error) {
+      console.error('Error getting prompt:', error);
+      return null;
     }
-    return null;
   };
 
-  const createPrompt = (promptData: PromptInput): Prompt => {
+  const createPrompt = async (promptData: PromptInput): Promise<Prompt> => {
     if (!user) {
       throw new Error('User must be logged in to create prompts');
     }
 
-    const newPrompt: Prompt = {
-      ...promptData,
-      id: crypto.randomUUID(),
-      userId: user.id,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
+    try {
+      const response = await fetch(`http://localhost:8787/api/prompts`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+        },
+        body: JSON.stringify(promptData)
+      });
 
-    // Save to localStorage
-    const storedPrompts = localStorage.getItem('prompts');
-    let updatedPrompts: Prompt[] = [];
-    if (storedPrompts) {
-      updatedPrompts = [...JSON.parse(storedPrompts), newPrompt];
-    } else {
-      updatedPrompts = [newPrompt];
+      if (!response.ok) {
+        throw new Error(`Failed to create prompt: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const newPrompt = data.data;
+
+      // Update local state
+      setPrompts(prev => [...prev, newPrompt]);
+
+      return newPrompt;
+    } catch (error) {
+      console.error('Error creating prompt:', error);
+      throw error;
     }
-    localStorage.setItem('prompts', JSON.stringify(updatedPrompts));
-
-    // Update state
-    setPrompts((prev) => [...prev, newPrompt]);
-
-    return newPrompt;
   };
 
-  const updatePrompt = (
+  const updatePrompt = async (
     id: string,
     promptData: Partial<PromptInput>
-  ): Prompt | false => {
-    const storedPrompts = localStorage.getItem('prompts');
-    if (!storedPrompts) return false;
+  ): Promise<Prompt | false> => {
+    try {
+      const response = await fetch(`http://localhost:8787/api/prompts/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+        },
+        body: JSON.stringify(promptData)
+      });
 
-    const parsedPrompts: Prompt[] = JSON.parse(storedPrompts);
-    const promptIndex = parsedPrompts.findIndex((p) => p.id === id);
+      if (!response.ok) {
+        throw new Error(`Failed to update prompt: ${response.status}`);
+      }
 
-    if (promptIndex === -1) return false;
+      const data = await response.json();
+      const updatedPrompt = data.data;
 
-    const updatedPrompt: Prompt = {
-      ...parsedPrompts[promptIndex],
-      ...promptData,
-      updatedAt: new Date().toISOString(),
-    };
+      // Update local state
+      setPrompts(prev => prev.map(p => p.id === id ? updatedPrompt : p));
 
-    parsedPrompts[promptIndex] = updatedPrompt;
-    localStorage.setItem('prompts', JSON.stringify(parsedPrompts));
-
-    // Update state
-    setPrompts((prev) => prev.map((p) => (p.id === id ? updatedPrompt : p)));
-
-    return updatedPrompt;
+      return updatedPrompt;
+    } catch (error) {
+      console.error('Error updating prompt:', error);
+      return false;
+    }
   };
 
-  const deletePrompt = (id: string): boolean => {
-    const storedPrompts = localStorage.getItem('prompts');
-    if (!storedPrompts) return false;
+  const deletePrompt = async (id: string): Promise<boolean> => {
+    try {
+      const response = await fetch(`http://localhost:8787/api/prompts/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+        }
+      });
 
-    const parsedPrompts: Prompt[] = JSON.parse(storedPrompts);
-    const filteredPrompts = parsedPrompts.filter((p) => p.id !== id);
+      if (!response.ok) {
+        throw new Error(`Failed to delete prompt: ${response.status}`);
+      }
 
-    localStorage.setItem('prompts', JSON.stringify(filteredPrompts));
+      // Update local state
+      setPrompts(prev => prev.filter(p => p.id !== id));
 
-    // Update state
-    setPrompts((prev) => prev.filter((p) => p.id !== id));
-
-    return true;
+      return true;
+    } catch (error) {
+      console.error('Error deleting prompt:', error);
+      return false;
+    }
   };
 
   return {

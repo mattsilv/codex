@@ -42,7 +42,11 @@ export default function MigrationBanner(): JSX.Element | null {
 
   // Check if there's local data to migrate
   useEffect(() => {
-    // Check if the user has already dismissed the banner
+    // Force dismiss the banner by default - we're now fully on D1
+    localStorage.setItem(`${STORAGE_KEYS.PROMPTS}_migration_dismissed`, 'true');
+    setShowBanner(false);
+    
+    // Legacy check code kept for backward compatibility
     const dismissed =
       localStorage.getItem(`${STORAGE_KEYS.PROMPTS}_migration_dismissed`) ===
       'true';
@@ -52,10 +56,14 @@ export default function MigrationBanner(): JSX.Element | null {
     } else {
       const hasData = hasLegacyData();
       setHasLocalData(hasData);
-      setShowBanner(hasData);
+      setShowBanner(false); // Always hide banner - we're now using D1 exclusively
     }
   }, []);
 
+  // Don't show the banner - we're now fully migrated to D1
+  return null;
+
+  /* Previous implementation kept for reference
   // Don't show the banner if there's no data to migrate or if it's been dismissed
   if (!hasLocalData || !showBanner) return null;
 
@@ -152,7 +160,6 @@ export default function MigrationBanner(): JSX.Element | null {
             </div>
           )}
 
-        {/* Migration logs section (hidden by default) */}
         {migrationResult && migrationResult.logs && showLogs && (
           <div className="my-4 bg-gray-100 p-3 rounded-md text-xs font-mono overflow-x-auto max-h-60 overflow-y-auto">
             {migrationResult.logs.map((log, index) => (
@@ -200,4 +207,5 @@ export default function MigrationBanner(): JSX.Element | null {
       </div>
     </div>
   );
+  */
 }

@@ -1,82 +1,44 @@
-// TypeScript Cloudflare Worker that returns a 200 response
-// This is a placeholder until we've migrated all the backend code to be compatible
+// Import the main backend handler
+import backendHandler from './src/backend/index';
 
 /**
- * Environment bindings for the Cloudflare Worker
+ * Cloudflare Worker for the Codex backend API
+ * Includes support for scheduled user deletion after 7-day retention period
  */
+
+// Simple type definitions for Cloudflare Worker environment
 interface Env {
   ENVIRONMENT: string;
-  DB: D1Database;
-  CONTENT_STORE: R2Bucket;
+  DB: any; // We'll use a generic type here as the exact D1Database type may not be available
+  JWT_SECRET?: string;
+  RESEND_API_KEY?: string;
+  [key: string]: any;
 }
 
-/**
- * Response shape for API responses
- */
-interface ApiResponse {
-  success: boolean;
-  message: string;
-  environment: string;
-  request: {
-    url: string;
-    method: string;
-    path: string;
-    headers: Record<string, string>;
-  };
-  nextSteps: string;
+interface ExecutionContext {
+  waitUntil(promise: Promise<any>): void;
 }
 
-/**
- * MIGRATION ROADMAP:
- * 1. Update all imports to use .js extensions
- * 2. Replace bcryptjs with Web Crypto API for authentication
- * 3. Update storage.js to properly handle env.CONTENT_STORE
- * 4. Test each endpoint individually
- */
 export default {
-  async fetch(
-    request: Request,
-    env: Env,
-    _ctx: ExecutionContext
-  ): Promise<Response> {
-    const url = new URL(request.url);
-    const path = url.pathname;
+  // Process HTTP requests by passing to the main backend handler
+  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+    return backendHandler.fetch(request, env, ctx);
+  },
 
-    // Handle CORS preflight requests
-    if (request.method === 'OPTIONS') {
-      return new Response(null, {
-        status: 200,
-        headers: {
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-        },
-      });
+  // Handle scheduled tasks
+  async scheduled(event: any, env: Env, _ctx: ExecutionContext): Promise<void> {
+    // Process scheduled user deletions daily
+    // This will permanently delete users that were marked for deletion more than 7 days ago
+    console.info('Running scheduled task: process user deletions');
+
+    try {
+      const { processScheduledUserDeletions } = await import(
+        './src/backend/api/auth'
+      );
+      const result = await processScheduledUserDeletions(env);
+      console.info('Scheduled task completed:', result);
+    } catch (error) {
+      console.error('Error in scheduled task:', error);
     }
-
-    // Return a helpful status message
-    const responseBody: ApiResponse = {
-      success: true,
-      message: 'Backend service is running',
-      environment: env.ENVIRONMENT || 'unknown',
-      request: {
-        url: request.url,
-        method: request.method,
-        path: path,
-        headers: Object.fromEntries([...request.headers]),
-      },
-      nextSteps:
-        'Follow the migration roadmap in docs/3-31-troubleshoot.md to implement the full backend',
-    };
-
-    return new Response(JSON.stringify(responseBody), {
-      status: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-      },
-    });
   },
 };

@@ -3,17 +3,87 @@
 ## Build Commands
 
 - **Install**: `pnpm install`
-- **Dev**: `pnpm dev`
+- **Dev**: `pnpm dev:all` (starts both frontend & backend)
 - **Build**: `pnpm build`
 - **Preview**: `pnpm preview`
 - **Lint**: `pnpm lint`
 - **Type Check**: `pnpm typecheck`
 
+## Authentication & Database Setup
+
+For local development, use the following test credentials:
+- Email: `alice@example.com`
+- Password: `password123`
+
+To verify authentication is working:
+```bash
+node verify-auth-setup.js
+```
+
+If authentication fails or you need a fresh database, reset it:
+```bash
+pnpm db:reset
+```
+
+The app now exclusively uses D1 (Cloudflare's serverless SQLite) for both local development 
+and production. The migration banner has been disabled since we no longer use localStorage.
+
+### D1 Database Configuration
+We've set up separate development and production D1 databases for better environment isolation:
+- Development database: `codex-dev-db` (ID: aaa6821d-001d-4da5-a7cc-ac5be57aa2d8)
+- Production database: `codex-prod-db` (ID: 74ff9511-8900-48c7-875b-e37a3544b576)
+
+### Database Setup Commands
+- **Reset database**: `pnpm db:reset`
+- **Seed test data**: `pnpm db:seed`
+- **Migrate local database**: `pnpm db:migrate:local`
+- **Migrate dev database**: `pnpm db:migrate:dev`
+- **Migrate prod database**: `pnpm db:migrate:prod`
+- **Open D1 Studio**: `pnpm db:studio`
+
+### Authentication System
+The application uses Lucia Auth for authentication with support for:
+- Username/password authentication
+- Google OAuth integration (configurable)
+- Session-based authentication
+- Security features like CSRF protection
+
+For detailed authentication information:
+- General setup: `/docs/local-auth-setup.md`
+- OAuth configuration: `/docs/OAUTH-README.md`
+
+#### OAuth Port Requirements
+For Google OAuth to work properly in development, these specific ports must be used:
+- Frontend: `5173` or `3001` (Vite default ports)
+- Backend: `8787` (Wrangler default port)
+
+These ports MUST be included in the Google OAuth console configuration.
+
+#### Local Infrastructure Management
+**IMPORTANT:** When testing OAuth or any features requiring both frontend and backend:
+1. Let the user run the infrastructure in separate terminal tabs
+2. Never attempt to automatically start the servers within Claude
+3. If ports are already in use, advise the user to run the port cleanup script:
+   ```bash
+   # Kill processes on ports 5173, 3001, and 8787
+   ./scripts/kill-dev-ports.sh
+   ```
+4. The user should run these commands in separate terminal windows:
+   ```bash
+   # Terminal 1 - Backend
+   cd /Users/m/gh/codex
+   ./scripts/start-backend-simple.sh
+   
+   # Terminal 2 - Frontend
+   cd /Users/m/gh/codex
+   pnpm run dev:frontend
+   ```
+
 ## Code Style Guidelines
 
 - **Framework**: Preact with functional components
 - **CSS**: Tailwind CSS v4 (utility-first approach)
-- **Storage**: LocalStorage for MVP, Cloudflare D1/R2 for backend
+- **Storage**: Cloudflare D1 (SQLite) for database, Cloudflare R2 for blob storage
 - **Formatting**: 2-space indentation, single quotes
 - **Imports**: Group by: 1) Libraries 2) Components 3) Hooks 4) Utils
 - **State Management**: Preact Context API & custom hooks
@@ -47,7 +117,7 @@
 - No Node.js-specific APIs or modules (process, fs, etc.)
 - Limited compatibility with npm packages that use Node.js features
 - Use Web APIs instead of Node.js-specific modules (Web Crypto API, etc.)
-- For authentication, avoid bcryptjs in favor of Worker-compatible alternatives
+- For authentication, we use Lucia which is Workers-compatible
 
 ## Project Directory Organization
 
@@ -75,10 +145,13 @@
   - **setup/**: Setup and initialization scripts
 - **docs/**: Documentation files
 - **public/**: Static assets
+- **migrations/**: Database schema migrations
+  - Regular migrations
+  - **lucia/**: Auth-specific migrations
 
 ## Key Features
 
-- User authentication (localStorage-based for MVP, JWT for backend)
+- User authentication (email/password and Google OAuth)
 - Create public/private prompts
 - Add responses from different LLMs
 - Markdown detection and rendering

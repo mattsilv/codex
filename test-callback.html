@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OAuth Callback Tester</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            padding: 2rem;
+            max-width: 800px;
+            margin: 0 auto;
+            line-height: 1.5;
+        }
+        
+        h1 {
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 0.5rem;
+        }
+        
+        pre {
+            background-color: #f5f5f5;
+            padding: 1rem;
+            overflow: auto;
+            max-height: 300px;
+            border-radius: 4px;
+        }
+        
+        .result {
+            margin-top: 1rem;
+            padding: 1rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        
+        .success {
+            background-color: #e8f5e9;
+            border-color: #a5d6a7;
+        }
+        
+        .error {
+            background-color: #ffebee;
+            border-color: #ef9a9a;
+        }
+        
+        button {
+            background-color: #4285f4;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+            margin-top: 1rem;
+        }
+        
+        button:hover {
+            background-color: #3367d6;
+        }
+    </style>
+</head>
+<body>
+    <h1>OAuth Callback Tester</h1>
+    <p>This page simulates handling the OAuth callback from Google authentication.</p>
+    
+    <div id="results">
+        <h2>Callback Data</h2>
+        <pre id="url-data">Waiting for data...</pre>
+        
+        <h2>Authentication Result</h2>
+        <div id="auth-result" class="result">
+            Parsing URL parameters...
+        </div>
+        
+        <button id="simulate-btn">Simulate Auth Callback</button>
+        <button id="clear-btn">Clear Results</button>
+    </div>
+    
+    <script>
+        // Function to parse URL query parameters
+        function parseQueryParams() {
+            const params = new URLSearchParams(window.location.search);
+            const urlData = {};
+            
+            for (const [key, value] of params.entries()) {
+                urlData[key] = value;
+            }
+            
+            return urlData;
+        }
+        
+        // Function to handle the OAuth callback
+        function handleCallback() {
+            const urlData = parseQueryParams();
+            document.getElementById('url-data').textContent = JSON.stringify(urlData, null, 2);
+            
+            const resultDiv = document.getElementById('auth-result');
+            
+            try {
+                if (urlData.token && urlData.user) {
+                    const userData = JSON.parse(decodeURIComponent(urlData.user));
+                    
+                    // Store auth data in localStorage
+                    localStorage.setItem('authToken', urlData.token);
+                    localStorage.setItem('authUser', JSON.stringify(userData));
+                    
+                    resultDiv.innerHTML = `
+                        <h3>Authentication Successful ✅</h3>
+                        <p><strong>User:</strong> ${userData.username || userData.email}</p>
+                        <p><strong>Email:</strong> ${userData.email}</p>
+                        <p><strong>Token:</strong> ${urlData.token}</p>
+                        <p>Auth data has been stored in localStorage.</p>
+                    `;
+                    resultDiv.className = 'result success';
+                } else if (urlData.error) {
+                    resultDiv.innerHTML = `
+                        <h3>Authentication Failed ❌</h3>
+                        <p><strong>Error:</strong> ${urlData.error}</p>
+                        <p><strong>Description:</strong> ${urlData.error_description || 'No description provided'}</p>
+                    `;
+                    resultDiv.className = 'result error';
+                } else {
+                    resultDiv.innerHTML = `
+                        <h3>No Auth Data Found ❓</h3>
+                        <p>No valid authentication data found in the URL. This may not be a proper callback URL.</p>
+                    `;
+                    resultDiv.className = 'result';
+                }
+            } catch (err) {
+                console.error('Error parsing callback data:', err);
+                resultDiv.innerHTML = `
+                    <h3>Error Processing Callback ❌</h3>
+                    <p><strong>Error:</strong> ${err.message}</p>
+                    <p>Check the console for more details.</p>
+                `;
+                resultDiv.className = 'result error';
+            }
+        }
+        
+        // Handle the callback when the page loads if it has query parameters
+        if (window.location.search) {
+            handleCallback();
+        }
+        
+        // Event listeners for buttons
+        document.getElementById('simulate-btn').addEventListener('click', () => {
+            // Create a simulated callback URL with mock data
+            const mockToken = 'mock-token-' + Math.random().toString(36).substring(2, 10);
+            const mockUser = {
+                id: 'google-oauth2|' + Date.now(),
+                email: 'test.user@example.com',
+                username: 'Test User',
+                emailVerified: true
+            };
+            
+            const mockUrl = `${window.location.pathname}?token=${mockToken}&user=${encodeURIComponent(JSON.stringify(mockUser))}`;
+            window.history.pushState({}, '', mockUrl);
+            handleCallback();
+        });
+        
+        document.getElementById('clear-btn').addEventListener('click', () => {
+            window.history.pushState({}, '', window.location.pathname);
+            document.getElementById('url-data').textContent = 'No data (cleared)';
+            document.getElementById('auth-result').innerHTML = 'Results cleared';
+            document.getElementById('auth-result').className = 'result';
+        });
+    </script>
+</body>
+</html>

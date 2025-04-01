@@ -15,6 +15,8 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
+    // Ensure proper support for Cloudflare Workers
+    target: 'esnext',
     // Add cache busting with content hash
     rollupOptions: {
       output: {
@@ -22,10 +24,17 @@ export default defineConfig({
         chunkFileNames: 'assets/[name]-[hash].js',
         assetFileNames: 'assets/[name]-[hash].[ext]',
       },
+      external: [
+        // External dependencies that are causing bundling issues
+        'lucia/utils',
+        '@lucia-auth/oauth/dist/core/oauth2',
+        '@lucia-auth/oauth/dist/providers/azure-ad',
+        '@lucia-auth/oauth/dist/providers/slack'
+      ]
     },
   },
   server: {
-    port: 3000,
+    port: 3001,
     proxy: {
       '/api': {
         target: 'http://localhost:8787',

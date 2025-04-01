@@ -14,5 +14,5 @@ if [ "$1" == "--local-test" ]; then
 else
   # Start normal wrangler backend
   echo "Starting Cloudflare Workers backend on port 8787..."
-  npx wrangler dev --port 8787 --local --persist
+  npx wrangler dev --port 8787 --local --no-show-interactive-dev-session
 fi

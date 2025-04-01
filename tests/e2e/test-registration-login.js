@@ -95,7 +95,7 @@ async function testRegistrationAndLogin() {
 
     // Navigate to the auth page
     console.log('Navigating to the auth page...');
-    await page.goto('http://localhost:3000/auth', {
+    await page.goto('http://localhost:3001/auth', {
       waitUntil: 'networkidle2',
     });
 
@@ -452,7 +452,7 @@ async function testRegistrationAndLogin() {
                 );
 
                 // Navigate to the verification page
-                await page.goto('http://localhost:3000/verify', {
+                await page.goto('http://localhost:3001/verify', {
                   waitUntil: 'networkidle2',
                 });
                 await page.waitForSelector('input[type="text"]');
@@ -630,7 +630,7 @@ async function testRegistrationAndLogin() {
     // Test login flow
     console.log('Testing login flow...');
     // Make sure we're on the login page
-    await page.goto('http://localhost:3000/auth', {
+    await page.goto('http://localhost:3001/auth', {
       waitUntil: 'networkidle2',
     });
 

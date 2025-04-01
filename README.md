@@ -1,270 +1,189 @@
-# Codex - LLM Prompt Tracker
+# Codex - Modern Prompt & Response Management
 
-A web application for saving, organizing, and comparing responses from different Large Language Models.
+A modern web application for managing prompts and responses from different AI models. Easily create, organize, and share prompts with their responses.
 
-## Setup & Development Guide
+## Features
 
-### Prerequisites
-
-- Node.js 18 or later
-- npm or pnpm
-
-### Installation
-
-```bash
-# Install dependencies
-pnpm install
-```
-
-### Development
-
-We've created several convenience scripts to handle development:
-
-#### Option 1: Start both frontend and backend together (recommended)
-
-```bash
-pnpm dev:all
-```
-
-This starts both the frontend and backend servers simultaneously. Frontend will be at http://localhost:3000 and backend at http://localhost:8787.
-
-#### Option 2: Start frontend and backend separately
-
-Terminal 1:
-
-```bash
-pnpm dev:backend
-```
-
-Terminal 2:
-
-```bash
-pnpm dev:frontend
-```
-
-#### Seed test data
-
-The backend automatically attempts to seed test data on startup. If you need to manually seed data:
-
-```bash
-pnpm seed-data
-```
-
-### Test accounts
-
-After seeding test data, you can log in with:
-
-1. **Alice:**
-
-   - Email: alice@example.com
-   - Password: password123
-
-2. **Bob:**
-   - Email: bob@example.com
-   - Password: password123
-
-## Project Structure
-
-- `/src/` - Source code
-  - `/frontend/` - Frontend application
-    - `/components/` - Preact components
-    - `/context/` - Application context providers
-    - `/hooks/` - Custom React hooks
-    - `/pages/` - Page components
-    - `/utils/` - Utility functions
-    - `/styles/` - CSS and Tailwind styles
-  - `/backend/` - Cloudflare Worker backend
-  - `/shared/` - Shared code between frontend and backend
-- `/tests/` - Test files ([Testing Documentation](/tests/README.md))
-  - `/unit/` - Unit tests
-  - `/integration/` - Integration tests
-  - `/e2e/` - End-to-end tests
-  - `/debug/` - Debugging utilities
-- `/scripts/` - Utility scripts
-  - `/setup/` - Setup and initialization scripts
-- `/migrations/` - Database migrations
-- `/docs/` - Documentation files
-- `/public/` - Static assets
+- User authentication with email/password and Google login
+- Create and manage prompts
+- Add responses from different AI models to prompts
+- Public and private prompts with sharing capabilities
+- Markdown support for prompt and response content
+- Modern, responsive UI with Tailwind CSS
 
 ## Technologies
 
-- **Frontend:** Preact, Tailwind CSS, TypeScript
-- **Backend:** Cloudflare Workers
-- **Database:** Cloudflare D1 (SQLite)
-- **Storage:** Cloudflare R2
-- **Build System:** Vite
+- **Frontend**: Preact with TypeScript
+- **Backend**: Cloudflare Workers
+- **Database**: Cloudflare D1 (SQLite)
+  - Development: `codex-dev-db` (ID: aaa6821d-001d-4da5-a7cc-ac5be57aa2d8)
+  - Production: `codex-prod-db` (ID: 74ff9511-8900-48c7-875b-e37a3544b576)
+- **Storage**: Cloudflare R2
+  - Development: `codex-dev-bucket`
+  - Production: `codex-prod-bucket`
+- **Authentication**: Lucia Auth with Google OAuth support
+- **Styling**: Tailwind CSS v4
+- **Deployment**: Cloudflare Pages
 
-## Cloudflare Workers Limitations
+## Getting Started
 
-- **ESM Imports:** Must use .js extensions in import statements
-- **No Node.js APIs:** Can't use Node-specific features (process, fs, etc.)
-- **Limited npm Compatibility:** Many Node.js-dependent packages won't work
-- **Authentication:** Can't use bcryptjs; use Web Crypto API instead
-- **Web Standards:** Use Web APIs instead of Node.js modules
+### Prerequisites
+
+- Node.js (v16+)
+- pnpm
+- Wrangler CLI for Cloudflare development
+
+### Installation
+
+1. Clone the repository
+   ```bash
+   git clone https://github.com/yourusername/codex.git
+   cd codex
+   ```
+
+2. Install dependencies
+   ```bash
+   pnpm install
+   ```
+
+3. Set up the local database
+   ```bash
+   pnpm db:migrate:local
+   pnpm db:seed
+   ```
+
+4. Start the development server
+   ```bash
+   pnpm dev:all
+   ```
+
+5. Open http://localhost:5173 in your browser
+
+### Development Workflow
+
+- **Start development server**: `pnpm dev:all`
+- **Build for production**: `pnpm build`
+- **Preview production build**: `pnpm preview`
+- **Run linting**: `pnpm lint`
+- **Run type checking**: `pnpm typecheck`
+- **Format code**: `pnpm format`
+
+## Database Commands
+
+- **Reset database**: `pnpm db:reset`
+- **Seed test data**: `pnpm db:seed`
+- **Migrate local database**: `pnpm db:migrate:local`
+- **Migrate development database**: `pnpm db:migrate:dev`
+- **Migrate production database**: `pnpm db:migrate:prod`
+- **Open D1 Studio**: `pnpm db:studio`
+
+## Authentication
+
+The application uses Lucia Auth for authentication with:
+
+- Username/password login
+- Google OAuth integration (configurable)
+- JWT-based session management
+- Account settings management
+
+For local testing, use these credentials:
+- Email: `alice@example.com`
+- Password: `password123`
+
+## Deployment Guide
+
+1. Configure your Cloudflare account with required services:
+   - D1 Database
+   - R2 Storage Bucket
+   - Workers/Pages for deployment
+
+2. Update the wrangler.toml configuration if needed
+
+3. Deploy to Cloudflare:
+   ```bash
+   pnpm deploy
+   ```
+
+### Database Configuration
+
+For first-time setup, you'll need to:
+
+1. Create the development and production databases:
+   ```bash
+   npx wrangler d1 create codex-dev-db
+   npx wrangler d1 create codex-prod-db
+   ```
+
+2. Update your wrangler.toml with the database IDs
+
+3. Run migrations:
+   ```bash
+   pnpm db:migrate:dev # For development database
+   pnpm db:migrate:prod # For production database
+   ```
+
+## Google OAuth Setup
+
+1. Create a Google OAuth application in the Google Cloud Console
+
+2. Configure the OAuth consent screen
+
+3. Configure the authorized JavaScript origins and redirect URIs:
+   - **Required JavaScript Origins:**
+     ```
+     http://localhost:5173
+     http://localhost:3001
+     http://localhost:8787
+     ```
+   
+   - **Required Redirect URI:**
+     ```
+     http://localhost:8787/api/auth/callback/google
+     ```
+
+4. Add your OAuth credentials to wrangler.toml:
+   ```toml
+   [vars]
+   GOOGLE_CLIENT_ID = "your-client-id"
+   GOOGLE_CLIENT_SECRET = "your-client-secret"
+   ```
+
+> **IMPORTANT:** For local development, the application MUST use:
+> - Port **3001** for the frontend (configured in vite.config.js)
+> - Port **5173** as an alternative frontend port (Vite default)
+> - Port **8787** for the backend (Wrangler default)
+>
+> These exact port numbers are configured in Google OAuth Console and cannot be changed easily.
+> If these ports are already in use, run: `./scripts/kill-dev-ports.sh`
+
+For detailed OAuth setup instructions, see:
+[Google OAuth Setup Guide](/docs/OAUTH-README.md)
+
+## Testing
+
+- **Run all tests**: `pnpm test`
+- **API tests**: `pnpm test:api`
+- **Unit tests**: `pnpm test:unit`
+- **E2E tests**: `pnpm test:e2e`
+- **Registration test**: `pnpm test:registration`
+- **Tailwind test**: `pnpm test:tailwind`
+
+## Project Structure
+
+- `src/frontend`: Frontend application code
+- `src/backend`: Cloudflare Worker backend API
+- `src/shared`: Shared code between frontend and backend
+- `migrations`: Database migrations
+- `tests`: Test files (unit, integration, E2E)
+- `public`: Static assets
+- `docs`: Documentation
 
 ## Troubleshooting
 
-If you encounter issues with authentication or the backend:
+- **Database Issues**: Reset with `pnpm db:reset` and seed fresh data
+- **Authentication Issues**: Check wrangler.toml for correct environment variables
+- **Deployment Issues**: Verify account permissions and resource access
 
-1. Try running the simplified backend server:
+## License
 
-   ```bash
-   ./scripts/start-backend-simple.sh
-   ```
-
-2. If database issues persist, reset your local development database:
-
-   ```bash
-   rm -rf .wrangler/state/v3/d1
-   ```
-
-3. Check browser console for error messages when using the Auth page
-
-4. Debug API connectivity with the debug tools:
-
-   ```bash
-   node tests/debug/debug-navigation.js
-   ```
-
-5. Run specific tests to identify issues:
-   ```bash
-   ./tests/run-tests.sh
-   ```
-
-For detailed troubleshooting information, see the TODO.md file and [Testing Documentation](/tests/README.md).
-
-## Cloudflare Production Deployment Guide
-
-Follow this detailed guide to deploy the application to Cloudflare. This outlines the best practices for setting up both frontend and backend components properly.
-
-### Current Deployment Status
-
-- Backend API deployed at: https://codex-api.silv.workers.dev
-- Frontend deployed at: https://8cc8ffed.codex-abq.pages.dev
-
-### 1. Cloudflare Resources Setup
-
-First, create all necessary resources in Cloudflare:
-
-#### Backend (Cloudflare Workers)
-
-```bash
-# Deploy backend to Cloudflare Workers
-npx wrangler deploy --env production
-
-# Create production database
-npx wrangler d1 create codex_db_prod
-
-# Apply database migrations
-npx wrangler d1 execute codex_db_prod --file ./migrations/0000_initial_schema.sql
-```
-
-#### Frontend (Cloudflare Pages)
-
-```bash
-# Build the frontend
-pnpm build
-
-# Create Pages project (required before deployment)
-npx wrangler pages project create codex --production-branch=main
-
-# Deploy built frontend to Pages
-npx wrangler pages deploy dist --project-name=codex
-```
-
-#### R2 Storage Setup
-
-```bash
-# This requires R2 to be enabled in your Cloudflare account first
-npx wrangler r2 bucket create codex-content-prod
-```
-
-### 2. Required Manual Configuration in Cloudflare Dashboard
-
-Some settings must be configured through the Cloudflare dashboard:
-
-#### Custom Domains Setup
-
-1. **Frontend Domain Setup**:
-
-   - Go to: Cloudflare Dashboard → Pages → codex project → Custom Domains
-   - Add domain: `codex.silv.app`
-   - Follow the verification steps
-
-2. **API Domain Setup**:
-   - Go to: Cloudflare Dashboard → Workers & Pages → codex-api worker → Triggers
-   - Add custom domain: `api.codex.silv.app`
-   - Follow the verification steps
-
-#### DNS Configuration
-
-Go to: Cloudflare Dashboard → DNS → Records, and add:
-
-- CNAME record: `codex` points to your Pages URL (e.g., `codex-abq.pages.dev`)
-- CNAME record: `api.codex` points to your Worker URL (e.g., `codex-api.silv.workers.dev`)
-
-#### CORS and Headers Configuration
-
-If needed, add CORS headers through the Cloudflare Dashboard:
-
-- Go to: Pages/Workers → codex-api → Settings → Headers
-- Add the appropriate CORS headers for cross-domain communication
-
-### 3. Update Configuration File
-
-After manually setting up resources, update your `wrangler.toml`:
-
-```toml
-# Update R2 bucket in wrangler.toml once created
-[[env.production.r2_buckets]]
-binding = "CONTENT_STORE"
-bucket_name = "codex-content-prod"
-```
-
-Then redeploy the backend:
-
-```bash
-npx wrangler deploy --env production
-```
-
-### 4. Troubleshooting Common Issues
-
-#### CNAME Cross-User Banned Error (Error 1014)
-
-This occurs when a CNAME record points to a Cloudflare domain owned by a different account.
-
-- Ensure domain registration and Pages/Workers deployment use the same Cloudflare account
-- Check DNS configuration in Cloudflare dashboard matches your deployment account
-- Verify the Pages project exists in the same account as your domain
-
-#### Pages Project Not Found
-
-If you see "Project not found" when deploying:
-
-- Create the project first: `npx wrangler pages project create codex --production-branch=main`
-- Then deploy: `npx wrangler pages deploy dist --project-name=codex`
-
-#### API Connection Issues
-
-If the frontend can't connect to the API:
-
-- Check CORS settings in `src/backend/middleware/cors.js`
-- Verify the API URL in `src/shared/constants.js` matches your production domain
-- Test API endpoints using the verification script: `node scripts/test-api.js`
-
-### 5. Verify Deployment
-
-After completing all steps, verify your deployment:
-
-```bash
-# Check DNS propagation
-./scripts/check-dns.sh
-
-# Test API endpoints
-node scripts/test-api.js
-
-# Verify full deployment
-./scripts/verify-deployment.sh
-```
-
-For more detailed instructions, refer to `/docs/production-setup-summary.md`.
+MIT

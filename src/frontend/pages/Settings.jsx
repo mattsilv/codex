@@ -93,8 +93,10 @@ export default function Settings() {
 
     try {
       // Make API call to delete user account
+      // Import API_URL from shared constants
+      const API_URL = await import('../utils/api').then(module => module.API_URL);
       const response = await fetch(
-        `${import.meta.env.VITE_API_URL || 'http://localhost:8787'}/api/auth/delete`,
+        `${API_URL}/auth/delete`,
         {
           method: 'DELETE',
           headers: {

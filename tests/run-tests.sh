@@ -52,7 +52,7 @@ echo "      - Open the browser console and run: import { runAllTests } from './t
 echo ""
 echo "   B. Using the test server:"
 echo "      - Run: node tests/e2e/test-full.js"
-echo "      - Open http://localhost:3000 in your browser and click 'Run Frontend Tests'"
+echo "      - Open http://localhost:3001 in your browser and click 'Run Frontend Tests'"
 
 # Ask user if they want to run the full test server
 read -p "Would you like to start the test server now? (y/n): " choice

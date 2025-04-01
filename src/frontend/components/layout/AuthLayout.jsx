@@ -6,18 +6,30 @@ import Footer from './Footer';
 
 export default function AuthLayout({ component: Component, ...props }) {
   const { isAuthenticated, loading } = useContext(AuthContext);
+  const isCallbackPage = props.path && props.path.includes('/auth/callback');
+
+  console.log('AuthLayout render - isAuthenticated:', isAuthenticated, 'loading:', loading, 'isCallbackPage:', isCallbackPage);
 
   useEffect(() => {
-    if (!loading && isAuthenticated) {
-      route('/dashboard');
+    console.log('AuthLayout useEffect - Auth state change:');
+    console.log('isAuthenticated:', isAuthenticated);
+    console.log('loading:', loading);
+    console.log('isCallbackPage:', isCallbackPage);
+    
+    if (!loading && isAuthenticated && !isCallbackPage) {
+      console.log('AuthLayout - User is authenticated, redirecting to dashboard');
+      // Use a slight delay to ensure all state updates are processed
+      setTimeout(() => {
+        route('/dashboard');
+      }, 100);
     }
-  }, [isAuthenticated, loading]);
+  }, [isAuthenticated, loading, isCallbackPage]);
 
   if (loading) {
     return <div className="container">Loading...</div>;
   }
 
-  if (isAuthenticated) {
+  if (isAuthenticated && !isCallbackPage) {
     return null; // Will redirect via the useEffect
   }
 

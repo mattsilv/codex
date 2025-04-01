@@ -6,14 +6,23 @@ import Footer from './Footer';
 import Sidebar from './Sidebar';
 
 export default function MainLayout({ component: Component, ...props }) {
-  const { isAuthenticated, loading } = useContext(AuthContext);
+  const { isAuthenticated, loading, user } = useContext(AuthContext);
   const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth > 768);
 
+  console.log('MainLayout render - isAuthenticated:', isAuthenticated, 'user:', user?.email);
+
   useEffect(() => {
+    // Log auth state changes
+    console.log('MainLayout useEffect - Auth state change detected:');
+    console.log('isAuthenticated:', isAuthenticated);
+    console.log('loading:', loading);
+    console.log('user:', user?.email);
+    
     if (!loading && !isAuthenticated) {
+      console.log('Not authenticated, redirecting to login');
       route('/auth');
     }
-  }, [isAuthenticated, loading]);
+  }, [isAuthenticated, loading, user]);
 
   useEffect(() => {
     const handleResize = () => {

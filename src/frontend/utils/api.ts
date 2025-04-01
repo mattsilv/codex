@@ -4,7 +4,8 @@ import { STORAGE_KEYS } from '@shared/constants';
 export interface User {
   id: string;
   email: string;
-  name: string;
+  username: string;
+  emailVerified?: boolean;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -45,7 +46,7 @@ export interface LoginCredentials {
 export interface RegisterData {
   email: string;
   password: string;
-  name: string;
+  username: string;
 }
 
 export interface PromptData {
@@ -63,7 +64,7 @@ export interface ResponseData {
 }
 
 export interface ProfileUpdateData {
-  name?: string;
+  username?: string;
   email?: string;
   currentPassword?: string;
   newPassword?: string;
@@ -84,19 +85,44 @@ export const getApiUrl = (): string => {
 
 export const API_URL: string = getApiUrl();
 
-// Helper function to handle API responses
+// Default fetch options to include with all requests
+const getDefaultFetchOptions = (): RequestInit => {
+  console.log('Configuring fetch options for API URL:', API_URL);
+  return {
+    // Always include credentials for CORS requests
+    credentials: 'include',
+    // Ensure cookies are included with cross-origin requests
+    mode: 'cors'
+  };
+};
+
+// Helper function to handle API responses with better error handling
 const handleResponse = async <T>(response: globalThis.Response): Promise<T> => {
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.error || `API error: ${response.status}`);
+    try {
+      // Try to parse error as JSON
+      const errorData = await response.json();
+      console.error('API error response:', errorData);
+      
+      // Extract error details for better user feedback
+      const errorMessage = errorData.error?.message || 
+                          (typeof errorData.error === 'string' ? errorData.error : null) || 
+                          `API error: ${response.status}`;
+                          
+      throw new Error(errorMessage);
+    } catch (parseError) {
+      // Fallback if response isn't valid JSON
+      console.error('Error parsing API error response:', parseError);
+      throw new Error(`API error (${response.status}): Unable to connect to server`);
+    }
   }
   return response.json() as Promise<T>;
 };
 
-// Function to get auth headers
+// Function to get auth headers - not needed with cookie auth
 const getAuthHeaders = (): Record<string, string> => {
-  const token = localStorage.getItem(STORAGE_KEYS.TOKEN);
-  return token ? { Authorization: `Bearer ${token}` } : {};
+  // No need to add Authorization header - session is maintained via HTTP-only cookie
+  return {};
 };
 
 export const api = {
@@ -104,6 +130,7 @@ export const api = {
   auth: {
     login: async (credentials: LoginCredentials): Promise<AuthResponse> => {
       const response = await fetch(`${API_URL}/auth/login`, {
+        ...getDefaultFetchOptions(),
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -115,6 +142,7 @@ export const api = {
 
     register: async (userData: RegisterData): Promise<AuthResponse> => {
       const response = await fetch(`${API_URL}/auth/register`, {
+        ...getDefaultFetchOptions(),
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -126,6 +154,7 @@ export const api = {
 
     getProfile: async (): Promise<User> => {
       const response = await fetch(`${API_URL}/auth/me`, {
+        ...getDefaultFetchOptions(),
         headers: {
           ...getAuthHeaders(),
           'Content-Type': 'application/json',
@@ -136,6 +165,7 @@ export const api = {
 
     updateProfile: async (profileData: ProfileUpdateData): Promise<User> => {
       const response = await fetch(`${API_URL}/auth/me`, {
+        ...getDefaultFetchOptions(),
         method: 'PUT',
         headers: {
           ...getAuthHeaders(),
@@ -151,6 +181,7 @@ export const api = {
   prompts: {
     getAll: async (): Promise<Prompt[]> => {
       const response = await fetch(`${API_URL}/prompts`, {
+        ...getDefaultFetchOptions(),
         headers: getAuthHeaders(),
       });
       return handleResponse<Prompt[]>(response);
@@ -158,6 +189,7 @@ export const api = {
 
     get: async (id: string): Promise<Prompt> => {
       const response = await fetch(`${API_URL}/prompts/${id}`, {
+        ...getDefaultFetchOptions(),
         headers: getAuthHeaders(),
       });
       return handleResponse<Prompt>(response);
@@ -165,6 +197,7 @@ export const api = {
 
     create: async (promptData: PromptData): Promise<Prompt> => {
       const response = await fetch(`${API_URL}/prompts`, {
+        ...getDefaultFetchOptions(),
         method: 'POST',
         headers: {
           ...getAuthHeaders(),
@@ -180,6 +213,7 @@ export const api = {
       promptData: Partial<PromptData>
     ): Promise<Prompt> => {
       const response = await fetch(`${API_URL}/prompts/${id}`, {
+        ...getDefaultFetchOptions(),
         method: 'PUT',
         headers: {
           ...getAuthHeaders(),
@@ -192,16 +226,11 @@ export const api = {
 
     delete: async (id: string): Promise<boolean> => {
       const response = await fetch(`${API_URL}/prompts/${id}`, {
+        ...getDefaultFetchOptions(),
         method: 'DELETE',
         headers: getAuthHeaders(),
       });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `Delete failed: ${response.status}`);
-      }
-
-      return true;
+      return handleResponse<boolean>(response);
     },
   },
 
@@ -209,6 +238,7 @@ export const api = {
   responses: {
     getAll: async (promptId: string): Promise<ApiResponse[]> => {
       const response = await fetch(`${API_URL}/prompts/${promptId}/responses`, {
+        ...getDefaultFetchOptions(),
         headers: getAuthHeaders(),
       });
       return handleResponse<ApiResponse[]>(response);
@@ -218,6 +248,7 @@ export const api = {
       const response = await fetch(
         `${API_URL}/prompts/${promptId}/responses/${responseId}`,
         {
+          ...getDefaultFetchOptions(),
           headers: getAuthHeaders(),
         }
       );
@@ -229,6 +260,7 @@ export const api = {
       responseData: ResponseData
     ): Promise<ApiResponse> => {
       const response = await fetch(`${API_URL}/prompts/${promptId}/responses`, {
+        ...getDefaultFetchOptions(),
         method: 'POST',
         headers: {
           ...getAuthHeaders(),
@@ -247,6 +279,7 @@ export const api = {
       const response = await fetch(
         `${API_URL}/prompts/${promptId}/responses/${responseId}`,
         {
+          ...getDefaultFetchOptions(),
           method: 'PUT',
           headers: {
             ...getAuthHeaders(),
@@ -262,17 +295,12 @@ export const api = {
       const response = await fetch(
         `${API_URL}/prompts/${promptId}/responses/${responseId}`,
         {
+          ...getDefaultFetchOptions(),
           method: 'DELETE',
           headers: getAuthHeaders(),
         }
       );
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `Delete failed: ${response.status}`);
-      }
-
-      return true;
+      return handleResponse<boolean>(response);
     },
   },
 };

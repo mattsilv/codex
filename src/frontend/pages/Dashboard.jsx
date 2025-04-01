@@ -2,7 +2,6 @@ import { useEffect } from 'preact/hooks';
 import { route } from 'preact-router';
 import Button from '../components/ui/Button';
 import PromptList from '../components/prompt/PromptList';
-import MigrationBanner from '../components/ui/MigrationBanner';
 import usePrompts from '../hooks/usePrompts';
 import useAuth from '../hooks/useAuth';
 
@@ -12,7 +11,9 @@ export default function Dashboard() {
 
   useEffect(() => {
     // Refresh prompts when dashboard loads
-    refresh();
+    refresh().catch(error => {
+      console.error('Error refreshing prompts:', error);
+    });
   }, []);
 
   return (
@@ -27,8 +28,6 @@ export default function Dashboard() {
           </div>
         </div>
       </header>
-
-      <MigrationBanner />
 
       {loading ? (
         <p aria-busy="true">Loading prompts...</p>

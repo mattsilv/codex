@@ -8,18 +8,19 @@
 // You might need to install @cloudflare/workers-types
 // import type { Request as CfRequest, ExecutionContext, KVNamespace, D1Database, R2Bucket } from '@cloudflare/workers-types';
 
-// Local imports (keep .js extension as per instructions)
+// Local imports (keep .js extension for some imports as per instructions)
 import {
   handleOptions,
   createErrorResponse,
   createSuccessResponse,
-} from './middleware/cors.js';
-import { handleAuthRequest } from './api/auth.js';
-import { handlePromptRequest } from './api/prompts.js';
-import { handleResponseRequest } from './api/responses.js';
-import { authenticateRequest } from './utils/auth.js';
-import { seedTestData } from './utils/seedTestData.js';
-import { ApiError } from './utils/errorHandler.js';
+} from './middleware/cors.ts';
+import { handleAuthRequest } from './api/auth.ts';
+import { handlePromptRequest } from './api/prompts.ts';
+import { handleResponseRequest } from './api/responses.ts';
+import { authenticateRequest, initializeLucia } from './utils/auth.ts';
+import { seedTestData } from './utils/seedTestData.ts';
+import { resetDatabase } from './utils/resetDatabase.ts';
+import { ApiError } from './utils/errorHandler.ts';
 
 /**
  * Define the environment bindings expected by the Worker.
@@ -36,6 +37,8 @@ export interface Env {
   AUTH_STORE?: unknown; // Placeholder: Replace if using a specific binding (e.g., KVNamespace)
   // Add other expected environment variables and bindings here
   AUTH_SECRET?: string;
+  GOOGLE_CLIENT_ID?: string;
+  GOOGLE_CLIENT_SECRET?: string;
   [key: string]: unknown; // Allows for flexibility but specific types are preferred
 }
 
@@ -59,6 +62,13 @@ export default {
     ctx: CfExecutionContext // Cloudflare Workers ExecutionContext
   ): Promise<Response> {
     // Standard Fetch API Response type
+
+    // --- Log Environment --- 
+    console.log(`[Worker Env] ENVIRONMENT: ${env.ENVIRONMENT ?? 'undefined'}`);
+
+    // Initialize Lucia Auth
+    const auth = initializeLucia(env);
+
     // Handle CORS preflight requests
     if (request.method === 'OPTIONS') {
       // Assuming handleOptions returns Response or Promise<Response>
@@ -80,12 +90,17 @@ export default {
 
       // Public auth endpoints (allow specific paths without auth)
       if (path.startsWith('/api/auth')) {
+        // Log the auth path being accessed
+        console.log(`[Auth] Handling auth request: ${path}`);
+        
         const isPublicAuthPath =
           path.startsWith('/api/auth/test-delete/') ||
           [
             '/api/auth/login',
             '/api/auth/register',
             '/api/auth/verify-email',
+            '/api/auth/google',
+            '/api/auth/callback/google',
             '/api/auth/resend-verification',
             '/api/auth/process-deletions',
             '/api/auth/cancel-deletion',
@@ -93,13 +108,13 @@ export default {
           ].includes(path);
 
         if (isPublicAuthPath) {
-          return await handleAuthRequest(request, env, ctx);
+          return await handleAuthRequest(request, env, ctx as any);
         }
 
         // Protected auth routes require authentication
         try {
-          authenticatedRequest = await authenticateRequest(request, env);
-          return await handleAuthRequest(authenticatedRequest, env, ctx);
+          authenticatedRequest = await authenticateRequest(request, auth);
+          return await handleAuthRequest(authenticatedRequest, env, ctx as any);
         } catch (error: unknown) {
           // Handle authentication failure
           console.error(
@@ -111,10 +126,12 @@ export default {
               ? error
               : new ApiError(401, 'UNAUTHORIZED', 'Authentication required');
           return createErrorResponse(
+            authenticatedRequest,
             apiError.status,
             apiError.code,
             apiError.message,
-            apiError.details
+            apiError.details,
+            env
           );
         }
       }
@@ -122,7 +139,80 @@ export default {
       // Dev seeding route
       if (path === '/api/seed-test-data' && env.ENVIRONMENT === 'development') {
         const result = await seedTestData(env);
-        return createSuccessResponse(result, 200, env);
+        return createSuccessResponse(request, result, 200, env);
+      }
+      
+      // Dev database reset route (reset and seed fresh data)
+      if ((path === '/api/reset-and-seed-db' || path === '/api/reset-db') && 
+          request.method === 'POST' && env.ENVIRONMENT === 'development') {
+        console.log(`Received request to ${path === '/api/reset-db' ? 'completely reset' : 'reset and seed'} database`);
+        
+        try {
+          // Only proceed if the admin key header is present
+          const adminKey = request.headers.get('X-Admin-Key');
+          
+          if (!adminKey) {
+            return createErrorResponse(
+              request,
+              401,
+              'UNAUTHORIZED',
+              'Admin key required',
+              null,
+              env
+            );
+          }
+          
+          // Parse the request body if available
+          let forceClean = false;
+          try {
+            const body = await request.json();
+            forceClean = !!body.forceClean;
+          } catch (e) {
+            // Ignore JSON parsing errors
+          }
+          
+          if (forceClean) {
+            console.log('FORCE CLEAN mode enabled - completely resetting database');
+          }
+          
+          // Run the reset operation
+          const result = await resetDatabase(env, adminKey);
+          
+          if (result.success) {
+            return createSuccessResponse(
+              request,
+              {
+                ...result,
+                testCredentials: {
+                  email: 'alice@example.com',
+                  password: 'password123'
+                },
+                forceClean
+              },
+              200,
+              env
+            );
+          } else {
+            return createErrorResponse(
+              request,
+              500,
+              'RESET_FAILED',
+              result.message,
+              { error: result.error },
+              env
+            );
+          }
+        } catch (error) {
+          console.error('Error resetting database:', error);
+          return createErrorResponse(
+            request,
+            500,
+            'INTERNAL_SERVER_ERROR',
+            'Failed to reset database',
+            null,
+            env
+          );
+        }
       }
 
       // Public GET prompts (single or listing)
@@ -136,7 +226,7 @@ export default {
           // Try auth only for specific prompt fetch, not public listing
           try {
             // Attempt authentication but don't require it
-            authenticatedRequest = await authenticateRequest(request, env);
+            authenticatedRequest = await authenticateRequest(request, auth);
           } catch {
             // Ignore auth errors for public reads, proceed with original request
             authenticatedRequest = request;
@@ -145,13 +235,27 @@ export default {
           // No auth needed or attempted for /api/prompts/public
           authenticatedRequest = request;
         }
-        return await handlePromptRequest(authenticatedRequest, env, ctx);
+        return await handlePromptRequest(authenticatedRequest, env, ctx as any);
       }
 
+      // --- Health check endpoint (needs to be before the auth check) ---
+      if (path === '/api/health') {
+        return createSuccessResponse(
+          request,
+          {
+            status: 'ok',
+            version: '1.0',
+            environment: env.ENVIRONMENT || 'unknown',
+          },
+          200,
+          env
+        );
+      }
+      
       // --- Default: Authenticate all other /api/ routes ---
       if (path.startsWith('/api/')) {
         try {
-          authenticatedRequest = await authenticateRequest(request, env);
+          authenticatedRequest = await authenticateRequest(request, auth);
         } catch (error: unknown) {
           // Handle authentication failure
           console.error('Authentication error for general API route:', error);
@@ -160,25 +264,30 @@ export default {
               ? error
               : new ApiError(401, 'UNAUTHORIZED', 'Authentication required');
           return createErrorResponse(
+            request,
             apiError.status,
             apiError.code,
             apiError.message,
-            apiError.details
+            apiError.details,
+            env
           );
         }
 
         // Route authenticated requests
         if (path.startsWith('/api/responses')) {
-          return await handleResponseRequest(authenticatedRequest, env, ctx);
+          return await handleResponseRequest(authenticatedRequest, env, ctx as any);
         } else if (path.startsWith('/api/prompts')) {
           // Handles POST, PUT, DELETE prompts (which required auth)
-          return await handlePromptRequest(authenticatedRequest, env, ctx);
+          return await handlePromptRequest(authenticatedRequest, env, ctx as any);
         } else {
           // Catch-all for authenticated /api/ routes not matched above
           return createErrorResponse(
+            authenticatedRequest,
             404,
             'NOT_FOUND',
-            'API endpoint not found'
+            'API endpoint not found',
+            null,
+            env
           );
         }
       }
@@ -186,6 +295,7 @@ export default {
       // --- Root path health check ---
       if (path === '/') {
         return createSuccessResponse(
+          request,
           {
             status: 'ok',
             version: '1.0', // Consider making this dynamic (e.g., from env or build step)
@@ -217,41 +327,39 @@ export default {
           const status = errorMessage.includes('could not find item')
             ? 404
             : 500;
-          return createErrorResponse(status, 'ASSET_ERROR', message);
+          return createErrorResponse(request, status, 'ASSET_ERROR', message, null, env);
         }
       }
 
       // --- Fallback 404 Not Found ---
       console.warn(`404 Not Found for path: ${path}`);
-      return createErrorResponse(404, 'NOT_FOUND', 'Resource not found');
+      return createErrorResponse(request, 404, 'NOT_FOUND', 'Resource not found', null, env);
     } catch (error: unknown) {
       // --- Global Error Handler ---
       console.error('Unhandled error in fetch handler:', error);
 
       if (error instanceof ApiError) {
         return createErrorResponse(
+          request,
           error.status,
           error.code,
           error.message,
-          error.details
+          error.details,
+          env
         );
       }
 
-      // For other errors, try to extract useful information safely
-      const errorMessage =
-        error instanceof Error ? error.message : String(error);
-      const errorStack = error instanceof Error ? error.stack : undefined;
-
-      // Generic 500 error
+      // Generic internal server error
       return createErrorResponse(
+        request,
         500,
-        'SERVER_ERROR',
+        'INTERNAL_SERVER_ERROR',
         'An unexpected error occurred',
-        // Provide stack trace only in development for security
-        env.ENVIRONMENT === 'development'
-          ? errorStack || errorMessage
-          : undefined
+        null,
+        env
       );
+    } finally {
+      // Add any cleanup logic here if needed
     }
   },
 

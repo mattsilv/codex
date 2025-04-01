@@ -14,6 +14,12 @@
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
     "typecheck": "tsc --noEmit",
     "format": "prettier --write .",
+    "db:reset": "node reset-database.js --force",
+    "db:seed": "node src/backend/utils/seedTestData.js",
+    "db:migrate:local": "npx wrangler d1 execute codex-dev-db --local --file=./migrations/0000_initial_schema.sql && npx wrangler d1 execute codex-dev-db --local --file=./migrations/0001_add_user_deletion.sql && npx wrangler d1 execute codex-dev-db --local --file=./migrations/0002_add_email_verification.sql",
+    "db:migrate:dev": "npx wrangler d1 execute codex-dev-db --file=./migrations/0000_initial_schema.sql && npx wrangler d1 execute codex-dev-db --file=./migrations/0001_add_user_deletion.sql && npx wrangler d1 execute codex-dev-db --file=./migrations/0002_add_email_verification.sql",
+    "db:migrate:prod": "npx wrangler d1 execute codex-prod-db --file=./migrations/0000_initial_schema.sql && npx wrangler d1 execute codex-prod-db --file=./migrations/0001_add_user_deletion.sql && npx wrangler d1 execute codex-prod-db --file=./migrations/0002_add_email_verification.sql",
+    "db:studio": "npx wrangler d1 execute codex-dev-db --local --command=\"SELECT name FROM sqlite_master WHERE type='table';\"",
     "seed-data": "node src/backend/utils/seedTestData.js",
     "deploy": "./scripts/deploy-prod.sh",
     "deploy:backend": "npx wrangler deploy --env production",
@@ -28,11 +34,14 @@
     "test:tailwind": "./tests/run-tailwind-test.sh"
   },
   "dependencies": {
+    "@lucia-auth/adapter-sqlite": "^3.0.2",
+    "@lucia-auth/oauth": "^2.2.0",
     "@picocss/pico": "^1.5.10",
     "cors": "^2.8.5",
     "drizzle-orm": "^0.28.6",
     "express": "^4.21.2",
     "jwt-decode": "^3.1.2",
+    "lucia": "^3.2.2",
     "marked": "^9.1.0",
     "preact": "^10.13.1",
     "preact-router": "^4.1.2"
@@ -58,6 +67,6 @@
     "ts-node": "^10.9.2",
     "typescript": "^5.8.2",
     "vite": "^4.4.5",
-    "wrangler": "^3.15.0"
+    "wrangler": "^4.6.0"
   }
 }

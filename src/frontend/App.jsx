@@ -10,6 +10,7 @@ import AuthLayout from './components/layout/AuthLayout';
 // Page components
 import Home from './pages/Home';
 import Auth from './pages/Auth';
+import AuthCallback from './pages/AuthCallback';
 import Dashboard from './pages/Dashboard';
 import PromptCreate from './pages/PromptCreate';
 import PromptDetail from './pages/PromptDetail';
@@ -26,6 +27,7 @@ export default function App() {
           <Router>
             <Home path="/" />
             <AuthLayout path="/auth" component={Auth} />
+            <AuthLayout path="/auth/callback" component={AuthCallback} />
             <AuthLayout path="/verify" component={Verify} />
             <AuthLayout path="/verify/:email" component={Verify} />
             <MainLayout path="/dashboard" component={Dashboard} />
