@@ -1,0 +1,32 @@
+name = "codex"
+compatibility_date = "2025-03-30"
+main = "worker.js"
+
+# Development settings
+[vars]
+ENVIRONMENT = "development"
+JWT_SECRET = "local-development-secret-key-do-not-use-in-production"
+RESEND_API_KEY = ""  # Replace with your Resend API key in your local wrangler.toml
+
+# D1 Database configuration
+[[d1_databases]]
+binding = "DB"
+database_name = "codex_db"
+database_id = "placeholder-database-id"
+preview_database_id = "codex_db" # Used for local development
+
+# R2 Bucket configuration
+[[r2_buckets]]
+binding = "CONTENT_STORE"
+bucket_name = "codex-content"
+
+# Scheduled tasks
+[triggers]
+# Process user deletion daily at midnight UTC
+crons = ["0 0 * * *"]
+
+# Local dev settings
+[dev]
+port = 8787
+local_protocol = "http"
+ip = "localhost"
