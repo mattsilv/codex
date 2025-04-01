@@ -1,85 +1,90 @@
 #!/bin/bash
+# Setup and run Google OAuth test
 
-# Script to set up and execute the Google OAuth test
-set -e
+# Set colors for output
+GREEN='\033[0;32m'
+RED='\033[0;31m'
+YELLOW='\033[0;33m'
+NC='\033[0m' # No Color
 
-# Display header
-echo "====================================="
-echo "Google OAuth Test Setup and Execution"
-echo "====================================="
-echo
+echo -e "${YELLOW}=== Google OAuth Test Setup ===${NC}"
+echo "This script will run the Google OAuth test using environment variables."
 
-# Check if .dev.vars exists
-if [ ! -f "./.dev.vars" ]; then
-  echo "Error: .dev.vars file not found."
-  echo "Please create this file in the project root with your Google OAuth credentials."
+# Check for .dev.vars file
+if [ ! -f ./.dev.vars ]; then
+  echo -e "${RED}Error: .dev.vars file not found${NC}"
+  echo "Please create a .dev.vars file with GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, and GOOGLE_REFRESH_TOKEN"
   exit 1
 fi
 
-# Check if required variables are in .dev.vars
-if ! grep -q "GOOGLE_CLIENT_ID" ./.dev.vars || \
-   ! grep -q "GOOGLE_CLIENT_SECRET" ./.dev.vars || \
-   ! grep -q "GOOGLE_REFRESH_TOKEN" ./.dev.vars; then
-  echo "Error: Missing one or more required variables in .dev.vars"
-  echo "Please ensure GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, and GOOGLE_REFRESH_TOKEN are set."
-  echo 
-  echo "To obtain these credentials:"
-  echo "1. Go to the Google Cloud Console: https://console.cloud.google.com/"
-  echo "2. Create a project and enable the Google OAuth API"
-  echo "3. Create OAuth 2.0 credentials"
-  echo "4. Set up authorized redirect URIs (e.g., http://localhost:8787/api/auth/callback/google)"
-  echo "5. Get a refresh token using the Google OAuth Playground (https://developers.google.com/oauthplayground/)"
-  exit 1
-fi
-
-# Export variables from .dev.vars for the test script
-echo "Loading environment variables from .dev.vars..."
+# Export variables from .dev.vars
+echo -e "${GREEN}Exporting environment variables from .dev.vars...${NC}"
 export $(grep -v '^#' ./.dev.vars | xargs)
 
-# Check if backend is running
-echo "Checking if backend server is running..."
-if ! curl -s http://localhost:8787/api/health >/dev/null; then
-  echo "Backend server does not appear to be running."
-  echo "Starting backend server..."
-  
-  # Start the backend server in the background
-  ./scripts/start-backend.sh &
-  BACKEND_PID=$!
-  
-  # Wait for backend to start
-  echo "Waiting for backend to start..."
-  for i in {1..10}; do
-    if curl -s http://localhost:8787/api/health >/dev/null; then
-      echo "Backend server started successfully!"
-      break
-    fi
-    if [ $i -eq 10 ]; then
-      echo "Error: Failed to start backend server."
-      exit 1
-    fi
-    sleep 2
-  done
-  
-  # Set flag to kill backend when script ends
-  KILL_BACKEND=true
-else
-  echo "Backend server is already running."
-  KILL_BACKEND=false
+# Verify required variables are set
+if [ -z "$GOOGLE_CLIENT_ID" ] || [ -z "$GOOGLE_CLIENT_SECRET" ] || [ -z "$GOOGLE_REFRESH_TOKEN" ]; then
+  echo -e "${RED}Error: Missing required Google OAuth variables in .dev.vars${NC}"
+  echo "Make sure these variables are defined:"
+  echo "  - GOOGLE_CLIENT_ID"
+  echo "  - GOOGLE_CLIENT_SECRET"
+  echo "  - GOOGLE_REFRESH_TOKEN"
+  exit 1
 fi
 
-# Run the OAuth test
-echo
-echo "Running Google OAuth login test..."
-node ./tests/e2e/test-google-oauth.js
+# Check if the backend is running
+if ! curl -s http://localhost:8787/health > /dev/null; then
+  echo -e "${YELLOW}Backend is not running. Starting simplified backend server...${NC}"
+  
+  # Start the simplified backend in the background
+  ./scripts/start-simplified-backend.sh &
+  
+  # Store the process ID for later cleanup
+  BACKEND_PID=$!
+  
+  # Wait for the backend to start
+  echo "Waiting for backend to start..."
+  attempts=0
+  max_attempts=10
+  
+  while ! curl -s http://localhost:8787/health > /dev/null; do
+    sleep 2
+    attempts=$((attempts+1))
+    if [ $attempts -ge $max_attempts ]; then
+      echo -e "${RED}Error: Backend failed to start after $max_attempts attempts${NC}"
+      # Kill the backend process if it was started
+      if [ ! -z "$BACKEND_PID" ]; then
+        kill $BACKEND_PID
+      fi
+      exit 1
+    fi
+    echo "Waiting... ($attempts/$max_attempts)"
+  done
+  
+  echo -e "${GREEN}Backend is now running!${NC}"
+  started_backend=true
+else
+  echo -e "${GREEN}Backend is already running.${NC}"
+  started_backend=false
+fi
 
-# Capture the exit code
-TEST_EXIT_CODE=$?
+# Run the test
+echo -e "${YELLOW}\nRunning Google OAuth test...${NC}"
+node tests/e2e/test-google-oauth.js
 
-# Clean up
-if [ "$KILL_BACKEND" = true ]; then
-  echo "Stopping backend server..."
+# Store the exit code
+test_exit_code=$?
+
+# Cleanup: Kill the backend if we started it
+if [ "$started_backend" = true ] && [ ! -z "$BACKEND_PID" ]; then
+  echo -e "${YELLOW}Stopping backend server...${NC}"
   kill $BACKEND_PID
 fi
 
-# Exit with the test's exit code
-exit $TEST_EXIT_CODE
+# Final result
+if [ $test_exit_code -eq 0 ]; then
+  echo -e "${GREEN}\n✅ Test completed successfully!${NC}"
+else
+  echo -e "${RED}\n❌ Test failed with exit code $test_exit_code${NC}"
+fi
+
+exit $test_exit_code

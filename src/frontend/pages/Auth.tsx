@@ -7,6 +7,7 @@ import Input from '../components/ui/Input';
 import { API_URL } from '../utils/api';
 import { AuthContext } from '../context/AuthContext';
 import useToast from '../hooks/useToast';
+import { GoogleLoginButton } from '../components/auth/GoogleLoginButton';
 
 interface ApiStatus {
   message: string;
@@ -14,7 +15,7 @@ interface ApiStatus {
 }
 
 export default function Auth(): JSX.Element {
-  const { user, login, register, isAuthenticated } = useAuth();
+  const { user, login, register, isAuthenticated, loginWithGoogle } = useAuth();
   const [error, setError] = useState<string | null>(null);
   const [isLogin, setIsLogin] = useState<boolean>(true);
   const [email, setEmail] = useState<string>('');
@@ -406,43 +407,8 @@ export default function Auth(): JSX.Element {
               <span>or</span>
             </div>
             
-            {/* Import GoogleLoginButton normally */}
-            <button
-              type="button"
-              onClick={async () => {
-                try {
-                  console.log('Initiating Google OAuth login via AuthContext');
-                  setIsSubmitting(true);
-                  
-                  // Use the loginWithGoogle method from AuthContext
-                  const result = await loginWithGoogle();
-                  
-                  console.log('Received OAuth data from context:', result);
-                  
-                  if (result && result.url) {
-                    console.log('Redirecting to Google OAuth URL:', result.url);
-                    window.location.href = result.url;
-                  } else {
-                    throw new Error('No URL in response from loginWithGoogle');
-                  }
-                } catch (err) {
-                  console.error('Error during Google OAuth init:', err);
-                  setError(`Google login error: ${(err as Error).message}`);
-                } finally {
-                  setIsSubmitting(false);
-                }
-              }}
-              disabled={isSubmitting}
-              className="flex items-center justify-center gap-2 w-full py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-            >
-              <svg className="h-5 w-5" viewBox="0 0 24 24">
-                <path
-                  d="M12.545 10.239v3.821h5.445c-.712 2.315-2.647 3.972-5.445 3.972-3.332 0-6.033-2.701-6.033-6.032s2.701-6.032 6.033-6.032c1.498 0 2.866.549 3.921 1.453l2.814-2.814C17.503 2.988 15.139 2 12.545 2 7.021 2 2.543 6.477 2.543 12s4.478 10 10.002 10c8.396 0 10.249-7.85 9.426-11.748l-9.426-.013z"
-                  fill="#4285F4"
-                />
-              </svg>
-              Continue with Google
-            </button>
+            {/* Import the GoogleLoginButton component */}
+            <GoogleLoginButton />
           </div>
         </form>
 

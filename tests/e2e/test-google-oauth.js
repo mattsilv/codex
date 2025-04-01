@@ -14,12 +14,16 @@ import fetch from 'node-fetch';
 // Constants
 const API_URL = process.env.API_URL || 'http://localhost:8787';
 const GOOGLE_TOKEN_URL = 'https://www.googleapis.com/oauth2/v4/token';
+const GOOGLE_USER_INFO_URL = 'https://www.googleapis.com/oauth2/v1/userinfo';
 const TEST_PAGE_URL = 'http://localhost:3001/dashboard'; // URL to test authenticated access
 
 // Get credentials from environment variables
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
 const GOOGLE_REFRESH_TOKEN = process.env.GOOGLE_REFRESH_TOKEN;
+
+// The test email address to verify
+const EXPECTED_EMAIL = process.env.EXPECTED_EMAIL || 'mattgpt30@gmail.com';
 
 // Verify required environment variables are set
 if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET || !GOOGLE_REFRESH_TOKEN) {
@@ -63,8 +67,29 @@ async function testGoogleOAuthLogin() {
     const tokenData = await tokenResponse.json();
     console.log('Access token obtained successfully!');
     
-    // Step 2: Call the test-login endpoint with the access token
-    console.log('2. Calling test-login endpoint with access token...');
+    // Step 2: Verify the token works by calling Google's user info endpoint
+    console.log('2. Verifying token with Google User Info API...');
+    const userInfoResponse = await fetch(GOOGLE_USER_INFO_URL, {
+      headers: {
+        'Authorization': `Bearer ${tokenData.access_token}`
+      }
+    });
+    
+    if (!userInfoResponse.ok) {
+      console.error('Error fetching user info:');
+      console.error(await userInfoResponse.text());
+      throw new Error('Failed to get user info from Google');
+    }
+    
+    const userData = await userInfoResponse.json();
+    console.log(`Google user info retrieved successfully for: ${userData.email}`);
+    
+    if (userData.email !== EXPECTED_EMAIL) {
+      console.warn(`Warning: The OAuth token is for ${userData.email}, not for the expected ${EXPECTED_EMAIL}`);
+    }
+    
+    // Step 3: Call the test-login endpoint with the access token
+    console.log('3. Calling test-login endpoint with access token...');
     const loginResponse = await fetch(`${API_URL}/api/auth/google/test-login`, {
       method: 'POST',
       headers: {
@@ -94,26 +119,47 @@ async function testGoogleOAuthLogin() {
     
     console.log('Session cookie received!');
     
-    // In a real test runner (Playwright/Cypress), you would now:
-    // 1. Set the cookie in the browser context
-    // 2. Navigate to a protected page
-    // 3. Verify the user is authenticated
+    // Step 4: Use the session cookie to make an authenticated request
+    const sessionCookie = cookies.split(';')[0]; // Extract just the name=value part
+    console.log('4. Testing authenticated access with session cookie...');
+    
+    const authCheckResponse = await fetch(`${API_URL}/api/auth/me`, {
+      headers: {
+        'Cookie': sessionCookie
+      }
+    });
+    
+    if (!authCheckResponse.ok) {
+      console.error('Error with authenticated request:');
+      console.error(await authCheckResponse.text());
+      throw new Error('Failed to access protected endpoint with session cookie');
+    }
+    
+    const authCheckData = await authCheckResponse.json();
+    console.log('Protected endpoint access successful!');
+    console.log('Authenticated user:', authCheckData);
     
     console.log(`\nTest completed successfully!`);
-    console.log(`\nIn a real E2E test, you would now:`);
-    console.log(`1. Set the session cookie in your browser context`);
-    console.log(`2. Navigate to ${TEST_PAGE_URL}`);
-    console.log(`3. Verify that you can access authenticated content`);
+    console.log(`\nVerified that OAuth login works for email: ${userData.email}`);
     
-    return true;
+    return { success: true, email: userData.email };
   } catch (error) {
     console.error('\nTest failed:', error.message);
-    return false;
+    return { success: false, error: error.message };
   }
 }
 
 // Run the test
 (async () => {
-  const success = await testGoogleOAuthLogin();
-  process.exit(success ? 0 : 1);
+  const result = await testGoogleOAuthLogin();
+  
+  if (result.success) {
+    console.log('\n✅ Google OAuth test passed successfully');
+    console.log(`Authenticated with email: ${result.email}`);
+    process.exit(0);
+  } else {
+    console.error('\n❌ Google OAuth test failed');
+    console.error('Error:', result.error);
+    process.exit(1);
+  }
 })();

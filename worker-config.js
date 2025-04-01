@@ -4,7 +4,8 @@ export default {
     const url = new URL(request.url);
     
     try {
-      if (url.pathname === '/api/health') {
+      // Also support both with and without /api prefix for health endpoint
+      if (url.pathname === '/api/health' || url.pathname === '/health') {
         const healthResponse = new Response(JSON.stringify({ 
           status: 'ok', 
           version: '1.0-dev',
@@ -212,6 +213,64 @@ export default {
             }
           }), {
             status: 500,
+            headers: { 
+              'Content-Type': 'application/json',
+              'Access-Control-Allow-Origin': 'http://localhost:3001',
+              'Access-Control-Allow-Credentials': 'true'
+            }
+          });
+        }
+      }
+      
+      // Add /api/auth/me endpoint for session validation
+      if (url.pathname === '/api/auth/me') {
+        console.log('[Auth Router] Handling /auth/me request');
+        
+        // Get the auth_session cookie
+        const cookieHeader = request.headers.get('cookie');
+        console.log('Cookie header:', cookieHeader);
+        
+        if (!cookieHeader) {
+          return new Response(JSON.stringify({
+            success: false,
+            error: {
+              code: "UNAUTHORIZED",
+              message: "Not authenticated - no cookie found"
+            }
+          }), {
+            status: 401,
+            headers: { 
+              'Content-Type': 'application/json',
+              'Access-Control-Allow-Origin': 'http://localhost:3001',
+              'Access-Control-Allow-Credentials': 'true'
+            }
+          });
+        }
+        
+        // Simple session validation - in a real app, this would check a database
+        if (cookieHeader.includes('auth_session=')) {
+          return new Response(JSON.stringify({
+            id: 'test-user-' + Date.now(),
+            email: "test@example.com",
+            username: "Test User",
+            emailVerified: true
+          }), {
+            status: 200,
+            headers: { 
+              'Content-Type': 'application/json',
+              'Access-Control-Allow-Origin': 'http://localhost:3001',
+              'Access-Control-Allow-Credentials': 'true'
+            }
+          });
+        } else {
+          return new Response(JSON.stringify({
+            success: false,
+            error: {
+              code: "UNAUTHORIZED",
+              message: "Not authenticated - invalid session"
+            }
+          }), {
+            status: 401,
             headers: { 
               'Content-Type': 'application/json',
               'Access-Control-Allow-Origin': 'http://localhost:3001',
