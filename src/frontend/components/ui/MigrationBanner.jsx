@@ -1,92 +1,122 @@
-import { useState } from 'preact/hooks';
-import { migrateLegacyData, hasLegacyData } from '../../utils/migrateLegacyData';
+import { useState, useEffect } from 'preact/hooks';
 import Button from './Button';
+import {
+  migrateLegacyData,
+  clearLocalStorageData,
+  hasLegacyData,
+} from '../../utils/migrateLegacyData';
+import { STORAGE_KEYS } from '@shared/constants';
 
 export default function MigrationBanner() {
-  const [isVisible, setIsVisible] = useState(hasLegacyData());
+  const [hasLocalData, setHasLocalData] = useState(false);
   const [isMigrating, setIsMigrating] = useState(false);
-  const [result, setResult] = useState(null);
-  
-  if (!isVisible) return null;
-  
+  const [migrationResult, setMigrationResult] = useState(null);
+  const [showBanner, setShowBanner] = useState(true);
+
+  // Check if there's local data to migrate
+  useEffect(() => {
+    setHasLocalData(hasLegacyData());
+  }, []);
+
+  // Don't show the banner if there's no data to migrate
+  if (!hasLocalData || !showBanner) return null;
+
   const handleMigrate = async () => {
     setIsMigrating(true);
     try {
-      const migrationResult = await migrateLegacyData();
-      setResult(migrationResult);
-      
-      if (migrationResult.success) {
-        setTimeout(() => {
-          setIsVisible(false);
-        }, 5000);
+      const result = await migrateLegacyData();
+      setMigrationResult(result);
+
+      // If migration was successful, clear the localStorage data
+      if (result.success && result.migrated) {
+        clearLocalStorageData(true);
       }
     } catch (error) {
-      setResult({
+      console.error('Migration failed:', error);
+      setMigrationResult({
         success: false,
-        message: error.message || 'Migration failed'
+        message: `Migration failed: ${error.message}`,
       });
     } finally {
       setIsMigrating(false);
     }
   };
-  
-  const handleDismiss = () => {
-    setIsVisible(false);
+
+  const dismissBanner = () => {
+    setShowBanner(false);
+    // Remember that user dismissed the banner
+    localStorage.setItem(`${STORAGE_KEYS.PROMPTS}_migration_dismissed`, 'true');
   };
-  
+
   return (
-    <div className="migration-banner" role="alert">
+    <div className="my-4 mb-8 p-4 bg-gray-50 border border-gray-200 rounded-lg shadow-sm">
       <div>
-        <strong>Local Data Detected</strong>
-        <p>
-          We found prompts and responses stored on your device. Would you like to migrate them to your account?
-        </p>
-        {result && (
-          <p className={result.success ? 'success' : 'error'}>
-            {result.message}
+        <h3 className="text-lg font-medium mt-0 mb-2">
+          {migrationResult
+            ? migrationResult.success
+              ? '✅ Migration Complete'
+              : '❌ Migration Failed'
+            : '🔄 Local Data Detected'}
+        </h3>
+
+        {!migrationResult ? (
+          <p className="text-gray-700">
+            You have prompts and responses stored locally in your browser. Would
+            you like to migrate this data to your account?
           </p>
+        ) : (
+          <p className="text-gray-700">{migrationResult.message}</p>
         )}
+
+        {migrationResult &&
+          migrationResult.success &&
+          migrationResult.stats && (
+            <div className="my-4 text-sm">
+              <p className="mb-1">
+                <span className="font-semibold">Prompts:</span>{' '}
+                {migrationResult.stats.prompts.migrated}/
+                {migrationResult.stats.prompts.total} migrated
+                {migrationResult.stats.prompts.failed > 0 && (
+                  <span className="text-red-600">
+                    {' '}
+                    ({migrationResult.stats.prompts.failed} failed)
+                  </span>
+                )}
+              </p>
+              <p>
+                <span className="font-semibold">Responses:</span>{' '}
+                {migrationResult.stats.responses.migrated}/
+                {migrationResult.stats.responses.total} migrated
+                {migrationResult.stats.responses.failed > 0 && (
+                  <span className="text-red-600">
+                    {' '}
+                    ({migrationResult.stats.responses.failed} failed)
+                  </span>
+                )}
+              </p>
+            </div>
+          )}
+
+        <div className="flex gap-2 mt-4">
+          {!migrationResult ? (
+            <>
+              <Button onClick={handleMigrate} disabled={isMigrating}>
+                {isMigrating ? 'Migrating...' : 'Migrate Data'}
+              </Button>
+              <Button variant="outline" onClick={dismissBanner}>
+                Dismiss
+              </Button>
+            </>
+          ) : (
+            <Button
+              variant={migrationResult.success ? 'outline' : 'primary'}
+              onClick={dismissBanner}
+            >
+              {migrationResult.success ? 'Dismiss' : 'Close'}
+            </Button>
+          )}
+        </div>
       </div>
-      <div className="migration-actions">
-        <Button 
-          onClick={handleMigrate} 
-          disabled={isMigrating}
-          aria-busy={isMigrating}
-        >
-          {isMigrating ? 'Migrating...' : 'Migrate Data'}
-        </Button>
-        <Button 
-          onClick={handleDismiss}
-          variant="secondary"
-          disabled={isMigrating}
-        >
-          Dismiss
-        </Button>
-      </div>
-      
-      <style jsx>{`
-        .migration-banner {
-          background-color: var(--card-background-color);
-          border-radius: var(--border-radius);
-          padding: 1rem;
-          margin-bottom: 1rem;
-          border-left: 5px solid var(--primary);
-        }
-        
-        .migration-actions {
-          display: flex;
-          gap: 0.5rem;
-          margin-top: 0.5rem;
-        }
-        
-        .success {
-          color: var(--form-element-valid-border-color);
-        }
-        
-        .error {
-          color: var(--form-element-invalid-border-color);
-        }
-      `}</style>
     </div>
   );
 }

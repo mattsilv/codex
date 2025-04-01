@@ -1,0 +1,5 @@
+name = "codex-frontend"
+compatibility_date = "2025-03-30"
+
+# Pages configuration
+pages_build_output_dir = "dist"

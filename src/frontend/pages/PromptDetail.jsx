@@ -7,7 +7,6 @@ import CopyButton from '../components/ui/CopyButton';
 import ResponseForm from '../components/response/ResponseForm';
 import ResponseList from '../components/response/ResponseList';
 import MarkdownPreview from '../components/response/MarkdownPreview';
-import { LoadingSpinner, LoadingOverlay, ErrorMessage } from '../components/ui/LoadingState';
 import usePrompts from '../hooks/usePrompts';
 import useResponses from '../hooks/useResponses';
 import useMarkdown from '../hooks/useMarkdown';
@@ -15,17 +14,15 @@ import { AppContext } from '../context/AppContext';
 import useAuth from '../hooks/useAuth';
 import { detectMarkdown } from '../utils/markdownDetector';
 import { marked } from 'marked';
-import '../styles/loading.css';
 
 export default function PromptDetail({ id }) {
   const { getPrompt, updatePrompt, deletePrompt } = usePrompts();
-  const { responses, loading: responsesLoading, error: responsesError } = useResponses(id);
+  const { responses, loading: responsesLoading } = useResponses(id);
   const { showToast } = useContext(AppContext);
   const { user } = useAuth();
-  
+
   const [prompt, setPrompt] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [isAddingResponse, setIsAddingResponse] = useState(false);
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
   const [isPublic, setIsPublic] = useState(false);
@@ -33,66 +30,69 @@ export default function PromptDetail({ id }) {
   const [isMarkdown, setIsMarkdown] = useState(false);
   const [renderedContent, setRenderedContent] = useState('');
   const [isEditing, setIsEditing] = useState(false);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [editFormData, setEditFormData] = useState({
     title: '',
-    content: ''
+    content: '',
   });
-  
+
   useEffect(() => {
     loadPrompt();
   }, [id]);
-  
+
   const loadPrompt = async () => {
     setLoading(true);
-    setError(null);
     try {
-      const loadedPrompt = await getPrompt(id);
+      const loadedPrompt = getPrompt(id);
       if (loadedPrompt) {
         setPrompt(loadedPrompt);
         setIsPublic(loadedPrompt.isPublic);
-        
+
         // Set edit form data
         setEditFormData({
           title: loadedPrompt.title || '',
-          content: loadedPrompt.content || ''
+          content: loadedPrompt.content || '',
         });
-        
+
         // Check if prompt content is markdown
         const contentIsMarkdown = detectMarkdown(loadedPrompt.content);
         setIsMarkdown(contentIsMarkdown);
-        
+
         if (contentIsMarkdown) {
           setRenderedContent(marked.parse(loadedPrompt.content));
         } else {
           setRenderedContent(loadedPrompt.content);
         }
       } else {
-        setError('Prompt not found');
         showToast('Prompt not found', 'error');
+        route('/dashboard');
       }
-    } catch (err) {
-      console.error('Error loading prompt:', err);
-      setError(err.message || 'Failed to load prompt');
+    } catch (error) {
+      console.error('Error loading prompt:', error);
       showToast('Failed to load prompt', 'error');
+      route('/dashboard');
     } finally {
       setLoading(false);
     }
   };
-  
+
   const handleTogglePublic = async () => {
     try {
-      const updatedPrompt = updatePrompt(id, { 
-        isPublic: !isPublic 
+      const updatedPrompt = updatePrompt(id, {
+        isPublic: !isPublic,
       });
       setPrompt(updatedPrompt);
       setIsPublic(updatedPrompt.isPublic);
-      showToast(`Prompt is now ${updatedPrompt.isPublic ? 'public' : 'private'}`, 'success');
+      showToast(
+        `Prompt is now ${updatedPrompt.isPublic ? 'public' : 'private'}`,
+        'success'
+      );
     } catch (error) {
       console.error('Error updating prompt:', error);
       showToast('Failed to update prompt', 'error');
     }
   };
-  
+
   const handleDelete = async () => {
     try {
       await deletePrompt(id);
@@ -104,51 +104,52 @@ export default function PromptDetail({ id }) {
       setIsConfirmingDelete(false);
     }
   };
-  
+
   const toggleMarkdownView = () => {
     setViewMarkdown(!viewMarkdown);
   };
-  
+
   const handleEditClick = () => {
     setIsEditing(true);
+    setShowMobileMenu(false);
   };
-  
+
   const handleCancelEdit = () => {
     // Reset form data to current prompt values
     setEditFormData({
       title: prompt.title || '',
-      content: prompt.content || ''
+      content: prompt.content || '',
     });
     setIsEditing(false);
   };
-  
+
   const handleEditChange = (e) => {
     const { name, value } = e.target;
-    setEditFormData(prev => ({
+    setEditFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
-  
+
   const handleSaveEdit = async () => {
     try {
       const updatedPrompt = updatePrompt(id, {
         title: editFormData.title,
-        content: editFormData.content
+        content: editFormData.content,
       });
-      
+
       setPrompt(updatedPrompt);
-      
+
       // Re-check if content is markdown after update
       const contentIsMarkdown = detectMarkdown(updatedPrompt.content);
       setIsMarkdown(contentIsMarkdown);
-      
+
       if (contentIsMarkdown) {
         setRenderedContent(marked.parse(updatedPrompt.content));
       } else {
         setRenderedContent(updatedPrompt.content);
       }
-      
+
       setIsEditing(false);
       showToast('Prompt updated successfully', 'success');
     } catch (error) {
@@ -156,132 +157,209 @@ export default function PromptDetail({ id }) {
       showToast('Failed to update prompt', 'error');
     }
   };
-  
+
+  const toggleMobileMenu = () => {
+    setShowMobileMenu(!showMobileMenu);
+  };
+
   if (loading) {
     return (
-      <div className="loading-container" style="display: flex; justify-content: center; padding: 3rem 0;">
-        <LoadingSpinner size="large" />
+      <div className="loading-container">
+        <div className="loading-spinner"></div>
+        <p>Loading prompt details...</p>
       </div>
     );
   }
-  
-  if (error) {
-    return (
-      <div>
-        <ErrorMessage message={error} onRetry={loadPrompt} />
-        <Button onClick={() => route('/dashboard')} style="margin-top: 1rem;">Back to Dashboard</Button>
-      </div>
-    );
-  }
-  
+
   if (!prompt) {
     return (
-      <div className="error-state">
-        <h2>Prompt not found</h2>
-        <p>The prompt you're looking for could not be found.</p>
-        <Button onClick={() => route('/dashboard')}>Back to Dashboard</Button>
+      <div className="empty-state">
+        <div className="empty-state-icon">🔍</div>
+        <h2>Prompt Not Found</h2>
+        <p>We couldn&apos;t find the prompt you&apos;re looking for.</p>
+        <Button onClick={() => route('/dashboard')} variant="primary">
+          Back to Dashboard
+        </Button>
       </div>
     );
   }
-  
+
   return (
-    <div>
-      <header className="mb-md">
-        {isEditing ? (
-          <div className="mb-md">
-            <input
-              type="text"
-              name="title"
-              value={editFormData.title}
-              onChange={handleEditChange}
-              placeholder="Prompt Title"
-              style={{ marginBottom: '0.5rem', width: '100%' }}
-            />
-          </div>
-        ) : (
-          <h1 className="mb-md">{prompt.title || "Prompt Details"}</h1>
-        )}
-        
-        <div className="header-actions">
-          <div className="page-actions">
+    <div className="prompt-detail-container">
+      <header className="prompt-detail-header">
+        <div className="prompt-title-container">
+          {isEditing ? (
+            <div className="edit-title-container">
+              <input
+                type="text"
+                name="title"
+                value={editFormData.title}
+                onChange={handleEditChange}
+                placeholder="Prompt Title"
+                className="edit-title-input"
+              />
+            </div>
+          ) : (
+            <h1 className="prompt-title">{prompt.title || 'Prompt Details'}</h1>
+          )}
+
+          {/* Mobile menu toggle button */}
+          <button
+            className="mobile-menu-toggle"
+            onClick={toggleMobileMenu}
+            aria-label="Toggle actions menu"
+          >
+            ⋮
+          </button>
+        </div>
+
+        {/* Desktop action buttons */}
+        <div className="header-actions desktop-actions">
+          {!isEditing ? (
+            <>
+              <Button
+                onClick={handleEditClick}
+                variant="outline"
+                className="btn-sm"
+              >
+                Edit
+              </Button>
+              <Button
+                onClick={() => setIsConfirmingDelete(true)}
+                variant="outline"
+                className="btn-sm"
+              >
+                Delete
+              </Button>
+              {isPublic && <ShareButton id={id} />}
+            </>
+          ) : (
+            <>
+              <Button
+                onClick={handleSaveEdit}
+                variant="primary"
+                className="btn-sm"
+              >
+                Save
+              </Button>
+              <Button
+                onClick={handleCancelEdit}
+                variant="outline"
+                className="btn-sm"
+              >
+                Cancel
+              </Button>
+            </>
+          )}
+        </div>
+
+        {/* Mobile action menu */}
+        {showMobileMenu && (
+          <div className="mobile-actions-menu">
             {!isEditing ? (
               <>
-                <Button onClick={handleEditClick} variant="outline" className="btn-sm">Edit</Button>
-                <Button onClick={() => setIsConfirmingDelete(true)} variant="outline" className="btn-sm">Delete</Button>
-                {isPublic && <ShareButton id={id} />}
+                <Button
+                  onClick={handleEditClick}
+                  variant="outline"
+                  className="btn-block"
+                >
+                  Edit Prompt
+                </Button>
+                <Button
+                  onClick={() => {
+                    setIsConfirmingDelete(true);
+                    setShowMobileMenu(false);
+                  }}
+                  variant="outline"
+                  className="btn-block"
+                >
+                  Delete Prompt
+                </Button>
+                {isPublic && <ShareButton id={id} className="btn-block" />}
               </>
             ) : (
               <>
-                <Button onClick={handleSaveEdit} variant="primary" className="btn-sm">Save</Button>
-                <Button onClick={handleCancelEdit} variant="outline" className="btn-sm">Cancel</Button>
+                <Button
+                  onClick={handleSaveEdit}
+                  variant="primary"
+                  className="btn-block"
+                >
+                  Save Changes
+                </Button>
+                <Button
+                  onClick={handleCancelEdit}
+                  variant="outline"
+                  className="btn-block"
+                >
+                  Cancel Editing
+                </Button>
               </>
             )}
           </div>
-        </div>
+        )}
       </header>
-      
-      <div className="prompt-content card mb-lg">
-        <div className="flex-between mb-md">
-          <div className="flex-start gap-xs">
-            <h3 style={{ color: 'var(--primary)', margin: 0 }}>Prompt:</h3>
+
+      <div className="prompt-content-card">
+        <div className="prompt-content-header">
+          <div className="prompt-content-label">
+            <h3 className="prompt-label">Prompt</h3>
             {!isEditing && (
-              <>
+              <div className="prompt-actions">
                 <CopyButton content={prompt.content} />
-                <label className="public-toggle flex-start gap-xs">
-                  <input 
-                    type="checkbox" 
+                <label className="public-toggle">
+                  <input
+                    type="checkbox"
                     role="switch"
                     checked={isPublic}
                     onChange={handleTogglePublic}
                   />
-                  <span>{isPublic ? 'Public' : 'Private'}</span>
+                  <span className="toggle-label">
+                    {isPublic ? 'Public' : 'Private'}
+                  </span>
                 </label>
-              </>
+              </div>
             )}
           </div>
-          
+
           {isMarkdown && !isEditing && (
-            <Button 
-              onClick={toggleMarkdownView} 
-              variant="outline" 
-              className="btn-sm"
+            <Button
+              onClick={toggleMarkdownView}
+              variant="outline"
+              className="markdown-toggle-btn"
             >
               {viewMarkdown ? 'View Raw' : 'View Rendered'}
             </Button>
           )}
         </div>
-        
+
         {isEditing ? (
-          <div>
+          <div className="edit-content-container">
             <textarea
               name="content"
               value={editFormData.content}
               onChange={handleEditChange}
               rows={15}
-              style={{ width: '100%', marginBottom: '1rem' }}
+              className="content-textarea"
               placeholder="Enter prompt content..."
             ></textarea>
-            
+
             {detectMarkdown(editFormData.content) && (
-              <div className="markdown-preview" style={{ marginTop: '1rem', border: '1px dashed var(--primary-focus)' }}>
-                <h4 style={{ color: 'var(--primary)', marginTop: 0 }}>Preview:</h4>
-                <MarkdownPreview 
-                rawContent={editFormData.content} 
-                renderedContent={marked.parse(editFormData.content)}
-                isMarkdown={true}
-                size="small"
-                compact={true}
-              />
+              <div className="markdown-preview-container">
+                <h4 className="preview-label">Preview</h4>
+                <MarkdownPreview
+                  rawContent={editFormData.content}
+                  renderedContent={marked.parse(editFormData.content)}
+                  isMarkdown={true}
+                  size="small"
+                  compact={true}
+                />
               </div>
             )}
           </div>
         ) : (
-          <div className="prompt-markdown-container" style={{ 
-            border: isMarkdown ? '1px dashed var(--primary-focus)' : 'none',
-            borderRadius: '4px',
-            padding: isMarkdown ? '1rem' : '0',
-            backgroundColor: isMarkdown ? 'rgba(99, 102, 241, 0.05)' : 'transparent'
-          }}>
+          <div
+            className={`prompt-content-display ${isMarkdown ? 'markdown-content' : ''}`}
+          >
             <MarkdownPreview
               rawContent={prompt.content}
               renderedContent={renderedContent}
@@ -291,29 +369,38 @@ export default function PromptDetail({ id }) {
           </div>
         )}
       </div>
-      
-      <div className="flex-between mb-md">
-        <h2>Responses ({responses.length})</h2>
-        <Button onClick={() => setIsAddingResponse(true)} className="btn-md">Add Response</Button>
+
+      <div className="responses-header">
+        <h2 className="responses-title">Responses ({responses.length})</h2>
+        <Button
+          onClick={() => setIsAddingResponse(true)}
+          className="add-response-btn"
+        >
+          Add Response
+        </Button>
       </div>
-      
-      <ErrorMessage message={responsesError} />
-      
+
       {responsesLoading ? (
-        <div className="loading-container" style="display: flex; justify-content: center; padding: 2rem 0;">
-          <LoadingSpinner size="medium" />
+        <div className="loading-container">
+          <div className="loading-spinner"></div>
+          <p>Loading responses...</p>
         </div>
       ) : responses.length === 0 ? (
-        <div className="empty-state">
-          <p>No responses yet. Add your first response to this prompt.</p>
-          <Button onClick={() => setIsAddingResponse(true)}>Add Response</Button>
+        <div className="empty-responses-container">
+          <div className="empty-state-icon">📝</div>
+          <h3>No Responses Yet</h3>
+          <p>
+            This prompt doesn&apos;t have any responses yet. Add your first
+            response to get started.
+          </p>
+          <Button onClick={() => setIsAddingResponse(true)} variant="primary">
+            Add First Response
+          </Button>
         </div>
       ) : (
-        <LoadingOverlay loading={responsesLoading}>
-          <ResponseList responses={responses} promptId={id} />
-        </LoadingOverlay>
+        <ResponseList responses={responses} promptId={id} />
       )}
-      
+
       {/* Add Response Modal */}
       <Modal
         isOpen={isAddingResponse}
@@ -325,27 +412,42 @@ export default function PromptDetail({ id }) {
           onSuccess={(newResponse) => {
             // Close the modal
             setIsAddingResponse(false);
-            
+
             // Refresh responses list
-            loadResponses();
-            
+            loadPrompt();
+
             // Show success message
             showToast('Response added successfully', 'success');
           }}
         />
       </Modal>
-      
+
       {/* Delete Confirmation Modal */}
       <Modal
         isOpen={isConfirmingDelete}
         onClose={() => setIsConfirmingDelete(false)}
         title="Confirm Delete"
       >
-        <div>
-          <p>Are you sure you want to delete this prompt and all its responses? This action cannot be undone.</p>
-          <div className="action-buttons" style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
-            <Button onClick={handleDelete} variant="contrast">Delete Permanently</Button>
-            <Button onClick={() => setIsConfirmingDelete(false)} variant="outline">Cancel</Button>
+        <div className="delete-confirmation">
+          <p className="delete-warning">
+            Are you sure you want to delete this prompt and all its responses?
+            This action can&apos;t be undone.
+          </p>
+          <div className="delete-actions">
+            <Button
+              onClick={handleDelete}
+              variant="contrast"
+              className="delete-btn"
+            >
+              Delete Permanently
+            </Button>
+            <Button
+              onClick={() => setIsConfirmingDelete(false)}
+              variant="outline"
+              className="cancel-btn"
+            >
+              Cancel
+            </Button>
           </div>
         </div>
       </Modal>

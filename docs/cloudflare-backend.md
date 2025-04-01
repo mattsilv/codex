@@ -11,25 +11,25 @@ Create a CORS middleware that can be used across your application:
 
 // Define standard CORS headers
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*", // Replace with your frontend domain(s) in production
-  "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization",
-  "Access-Control-Max-Age": "86400", // 24 hours
+  'Access-Control-Allow-Origin': '*', // Replace with your frontend domain(s) in production
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  'Access-Control-Max-Age': '86400', // 24 hours
 };
 
 // Handle preflight OPTIONS requests
 export function handleOptions(request) {
   // Make sure the necessary headers are present for a valid pre-flight request
   if (
-    request.headers.get("Origin") !== null &&
-    request.headers.get("Access-Control-Request-Method") !== null &&
-    request.headers.get("Access-Control-Request-Headers") !== null
+    request.headers.get('Origin') !== null &&
+    request.headers.get('Access-Control-Request-Method') !== null &&
+    request.headers.get('Access-Control-Request-Headers') !== null
   ) {
     // Create response headers by combining corsHeaders with requested headers
     const respHeaders = {
       ...corsHeaders,
-      "Access-Control-Allow-Headers": request.headers.get(
-        "Access-Control-Request-Headers"
+      'Access-Control-Allow-Headers': request.headers.get(
+        'Access-Control-Request-Headers'
       ),
     };
 
@@ -61,15 +61,15 @@ Incorporate the CORS middleware in your main Worker:
 
 ```javascript
 // src/backend/index.js
-import { handleOptions, addCorsHeaders } from "./middleware/cors";
-import { handleAuthRequest } from "./api/auth";
-import { handlePromptRequest } from "./api/prompts";
-import { handleResponseRequest } from "./api/responses";
+import { handleOptions, addCorsHeaders } from './middleware/cors';
+import { handleAuthRequest } from './api/auth';
+import { handlePromptRequest } from './api/prompts';
+import { handleResponseRequest } from './api/responses';
 
 export default {
   async fetch(request, env, ctx) {
     // Handle CORS preflight requests
-    if (request.method === "OPTIONS") {
+    if (request.method === 'OPTIONS') {
       return handleOptions(request);
     }
 
@@ -78,9 +78,9 @@ export default {
 
     // Authentication middleware
     if (
-      path.startsWith("/api/") &&
-      path !== "/api/auth/login" &&
-      path !== "/api/auth/register"
+      path.startsWith('/api/') &&
+      path !== '/api/auth/login' &&
+      path !== '/api/auth/register'
     ) {
       try {
         request = await authenticateRequest(request, env);
@@ -88,7 +88,7 @@ export default {
         return addCorsHeaders(
           new Response(JSON.stringify({ error: error.message }), {
             status: 401,
-            headers: { "Content-Type": "application/json" },
+            headers: { 'Content-Type': 'application/json' },
           })
         );
       }
@@ -97,10 +97,10 @@ export default {
     // Route to appropriate handler
     let response;
     try {
-      if (path.startsWith("/api/auth/")) {
+      if (path.startsWith('/api/auth/')) {
         response = await handleAuthRequest(request, env, ctx);
-      } else if (path.startsWith("/api/prompts")) {
-        if (path.includes("/responses")) {
+      } else if (path.startsWith('/api/prompts')) {
+        if (path.includes('/responses')) {
           response = await handleResponseRequest(request, env, ctx);
         } else {
           response = await handlePromptRequest(request, env, ctx);
@@ -117,7 +117,7 @@ export default {
       return addCorsHeaders(
         new Response(JSON.stringify({ error: error.message }), {
           status: 500,
-          headers: { "Content-Type": "application/json" },
+          headers: { 'Content-Type': 'application/json' },
         })
       );
     }
@@ -131,7 +131,7 @@ export default {
 
    ```javascript
    const corsHeaders = {
-     "Access-Control-Allow-Origin": "https://your-app-domain.com",
+     'Access-Control-Allow-Origin': 'https://your-app-domain.com',
      // Other headers...
    };
    ```
@@ -140,15 +140,15 @@ export default {
 
    ```javascript
    const allowedOrigins = [
-     "https://your-app-domain.com",
-     "https://staging-app-domain.com",
-     "http://localhost:3000",
+     'https://your-app-domain.com',
+     'https://staging-app-domain.com',
+     'http://localhost:3000',
    ];
 
    function handleCors(request, response) {
-     const origin = request.headers.get("Origin");
+     const origin = request.headers.get('Origin');
      if (origin && allowedOrigins.includes(origin)) {
-       response.headers.set("Access-Control-Allow-Origin", origin);
+       response.headers.set('Access-Control-Allow-Origin', origin);
      }
      return response;
    }
@@ -157,14 +157,14 @@ export default {
 3. **Limit Exposed Headers**: Only expose headers that your frontend needs:
 
    ```javascript
-   corsHeaders["Access-Control-Expose-Headers"] =
-     "Content-Length, Content-Type";
+   corsHeaders['Access-Control-Expose-Headers'] =
+     'Content-Length, Content-Type';
    ```
 
 4. **Credentials Support**: If your frontend uses credentials (cookies, HTTP authentication), configure CORS accordingly:
 
    ```javascript
-   corsHeaders["Access-Control-Allow-Credentials"] = "true";
+   corsHeaders['Access-Control-Allow-Credentials'] = 'true';
    ```
 
    Note: When using credentials, you cannot use `'*'` for `Access-Control-Allow-Origin`. You must specify the exact origin.
@@ -173,15 +173,15 @@ export default {
 
    ```javascript
    // Read environment from Cloudflare environment variables
-   const environment = env.ENVIRONMENT || "development";
+   const environment = env.ENVIRONMENT || 'development';
 
    let allowedOrigins;
-   if (environment === "production") {
-     allowedOrigins = ["https://your-app-domain.com"];
-   } else if (environment === "staging") {
-     allowedOrigins = ["https://staging-app-domain.com"];
+   if (environment === 'production') {
+     allowedOrigins = ['https://your-app-domain.com'];
+   } else if (environment === 'staging') {
+     allowedOrigins = ['https://staging-app-domain.com'];
    } else {
-     allowedOrigins = ["http://localhost:3000"];
+     allowedOrigins = ['http://localhost:3000'];
    }
    ```
 
@@ -433,55 +433,55 @@ npm install -D drizzle-kit
 
 ```javascript
 // src/backend/db/schema.js
-import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
-import { sql } from "drizzle-orm";
+import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
+import { sql } from 'drizzle-orm';
 
-export const users = sqliteTable("users", {
-  id: text("id").primaryKey(),
-  username: text("username").notNull().unique(),
-  email: text("email").notNull().unique(),
-  passwordHash: text("password_hash").notNull(),
-  createdAt: text("created_at")
+export const users = sqliteTable('users', {
+  id: text('id').primaryKey(),
+  username: text('username').notNull().unique(),
+  email: text('email').notNull().unique(),
+  passwordHash: text('password_hash').notNull(),
+  createdAt: text('created_at')
     .default(sql`CURRENT_TIMESTAMP`)
     .notNull(),
-  updatedAt: text("updated_at")
+  updatedAt: text('updated_at')
     .default(sql`CURRENT_TIMESTAMP`)
     .notNull(),
 });
 
-export const prompts = sqliteTable("prompts", {
-  id: text("id").primaryKey(),
-  userId: text("user_id")
+export const prompts = sqliteTable('prompts', {
+  id: text('id').primaryKey(),
+  userId: text('user_id')
     .notNull()
     .references(() => users.id),
-  title: text("title"),
-  contentPreview: text("content_preview").notNull(),
-  contentBlobKey: text("content_blob_key").notNull(),
-  isPublic: integer("is_public", { mode: "boolean" }).notNull().default(false),
-  createdAt: text("created_at")
+  title: text('title'),
+  contentPreview: text('content_preview').notNull(),
+  contentBlobKey: text('content_blob_key').notNull(),
+  isPublic: integer('is_public', { mode: 'boolean' }).notNull().default(false),
+  createdAt: text('created_at')
     .default(sql`CURRENT_TIMESTAMP`)
     .notNull(),
-  updatedAt: text("updated_at")
+  updatedAt: text('updated_at')
     .default(sql`CURRENT_TIMESTAMP`)
     .notNull(),
-  tags: text("tags"),
+  tags: text('tags'),
 });
 
-export const responses = sqliteTable("responses", {
-  id: text("id").primaryKey(),
-  promptId: text("prompt_id")
+export const responses = sqliteTable('responses', {
+  id: text('id').primaryKey(),
+  promptId: text('prompt_id')
     .notNull()
     .references(() => prompts.id),
-  modelName: text("model_name").notNull(),
-  contentPreview: text("content_preview").notNull(),
-  contentBlobKey: text("content_blob_key").notNull(),
-  isMarkdown: integer("is_markdown", { mode: "boolean" })
+  modelName: text('model_name').notNull(),
+  contentPreview: text('content_preview').notNull(),
+  contentBlobKey: text('content_blob_key').notNull(),
+  isMarkdown: integer('is_markdown', { mode: 'boolean' })
     .notNull()
     .default(true),
-  createdAt: text("created_at")
+  createdAt: text('created_at')
     .default(sql`CURRENT_TIMESTAMP`)
     .notNull(),
-  updatedAt: text("updated_at")
+  updatedAt: text('updated_at')
     .default(sql`CURRENT_TIMESTAMP`)
     .notNull(),
 });
@@ -492,11 +492,11 @@ export const responses = sqliteTable("responses", {
 ```javascript
 // drizzle.config.js
 export default {
-  schema: "./src/backend/db/schema.js",
-  out: "./migrations",
-  driver: "better-sqlite",
+  schema: './src/backend/db/schema.js',
+  out: './migrations',
+  driver: 'better-sqlite',
   dbCredentials: {
-    url: "./.wrangler/state/d1/DB/db.sqlite",
+    url: './.wrangler/state/d1/DB/db.sqlite',
   },
 };
 ```
@@ -532,8 +532,8 @@ Create a database client utility to handle connections to D1:
 
 ```javascript
 // src/backend/db/client.js
-import { drizzle } from "drizzle-orm/d1";
-import * as schema from "./schema";
+import { drizzle } from 'drizzle-orm/d1';
+import * as schema from './schema';
 
 export function createDb(d1Database) {
   return drizzle(d1Database, { schema });
@@ -544,10 +544,10 @@ export function createDb(d1Database) {
 
 ```javascript
 // src/backend/api/prompts.js
-import { createDb } from "../db/client";
-import { prompts } from "../db/schema";
-import { eq } from "drizzle-orm";
-import { storeContent, getContent } from "../utils/storage";
+import { createDb } from '../db/client';
+import { prompts } from '../db/schema';
+import { eq } from 'drizzle-orm';
+import { storeContent, getContent } from '../utils/storage';
 
 export async function handlePromptRequest(request, env, ctx) {
   const db = createDb(env.DB);
@@ -556,7 +556,7 @@ export async function handlePromptRequest(request, env, ctx) {
   const path = url.pathname;
 
   // Get all prompts for a user
-  if (path === "/api/prompts" && request.method === "GET") {
+  if (path === '/api/prompts' && request.method === 'GET') {
     const userPrompts = await db
       .select()
       .from(prompts)
@@ -564,7 +564,7 @@ export async function handlePromptRequest(request, env, ctx) {
       .orderBy(prompts.updatedAt);
 
     return new Response(JSON.stringify(userPrompts), {
-      headers: { "Content-Type": "application/json" },
+      headers: { 'Content-Type': 'application/json' },
     });
   }
 
@@ -578,7 +578,7 @@ Create a storage utility to handle content storage in R2:
 
 ```javascript
 // src/backend/utils/storage.js
-export async function storeContent(env, content, prefix = "prompt") {
+export async function storeContent(env, content, prefix = 'prompt') {
   const key = `${prefix}_${Date.now()}_${Math.random()
     .toString(36)
     .substring(2, 9)}`;
@@ -594,7 +594,7 @@ export async function getContent(env, key) {
   const object = await env.CONTENT_STORE.get(key);
 
   if (object === null) {
-    throw new Error("Content not found");
+    throw new Error('Content not found');
   }
 
   return object.text();
@@ -607,10 +607,10 @@ Here's an example of how to implement the prompts API using Drizzle ORM:
 
 ```javascript
 // src/backend/api/prompts.js
-import { createDb } from "../db/client";
-import { prompts, responses } from "../db/schema";
-import { eq, and } from "drizzle-orm";
-import { storeContent, getContent } from "../utils/storage";
+import { createDb } from '../db/client';
+import { prompts, responses } from '../db/schema';
+import { eq, and } from 'drizzle-orm';
+import { storeContent, getContent } from '../utils/storage';
 
 export async function handlePromptRequest(request, env, ctx) {
   const db = createDb(env.DB);
@@ -619,7 +619,7 @@ export async function handlePromptRequest(request, env, ctx) {
   const id = path.match(/\/api\/prompts\/([^\/]+)/)?.[1];
 
   // List prompts
-  if (path === "/api/prompts" && request.method === "GET") {
+  if (path === '/api/prompts' && request.method === 'GET') {
     const userPrompts = await db
       .select()
       .from(prompts)
@@ -627,27 +627,27 @@ export async function handlePromptRequest(request, env, ctx) {
       .orderBy(prompts.updatedAt);
 
     return new Response(JSON.stringify(userPrompts), {
-      headers: { "Content-Type": "application/json" },
+      headers: { 'Content-Type': 'application/json' },
     });
   }
 
   // Create prompt
-  if (path === "/api/prompts" && request.method === "POST") {
+  if (path === '/api/prompts' && request.method === 'POST') {
     const { title, content, isPublic, tags } = await request.json();
 
     // Store full content in R2
-    const contentBlobKey = await storeContent(env, content, "prompt");
+    const contentBlobKey = await storeContent(env, content, 'prompt');
 
     // Store metadata in D1
     const contentPreview =
-      content.substring(0, 100) + (content.length > 100 ? "..." : "");
+      content.substring(0, 100) + (content.length > 100 ? '...' : '');
     const promptId = crypto.randomUUID();
     const now = new Date().toISOString();
 
     await db.insert(prompts).values({
       id: promptId,
       userId: request.user.id,
-      title: title || "",
+      title: title || '',
       contentPreview,
       contentBlobKey,
       isPublic: !!isPublic,
@@ -657,12 +657,12 @@ export async function handlePromptRequest(request, env, ctx) {
     });
 
     return new Response(JSON.stringify({ id: promptId }), {
-      headers: { "Content-Type": "application/json" },
+      headers: { 'Content-Type': 'application/json' },
     });
   }
 
   // Get single prompt with responses
-  if (id && request.method === "GET") {
+  if (id && request.method === 'GET') {
     // Get prompt metadata from D1
     const [prompt] = await db
       .select()
@@ -671,12 +671,12 @@ export async function handlePromptRequest(request, env, ctx) {
       .limit(1);
 
     if (!prompt) {
-      return new Response("Prompt not found", { status: 404 });
+      return new Response('Prompt not found', { status: 404 });
     }
 
     // Check access permissions
     if (!prompt.isPublic && prompt.userId !== request.user?.id) {
-      return new Response("Unauthorized", { status: 403 });
+      return new Response('Unauthorized', { status: 403 });
     }
 
     // Get full content from R2
@@ -704,12 +704,12 @@ export async function handlePromptRequest(request, env, ctx) {
         responses: responsesWithContent,
       }),
       {
-        headers: { "Content-Type": "application/json" },
+        headers: { 'Content-Type': 'application/json' },
       }
     );
   }
 
-  return new Response("Not found", { status: 404 });
+  return new Response('Not found', { status: 404 });
 }
 ```
 
@@ -717,9 +717,9 @@ export async function handlePromptRequest(request, env, ctx) {
 
 ```javascript
 // src/backend/index.js
-import { handleAuthRequest } from "./api/auth";
-import { handlePromptRequest } from "./api/prompts";
-import { handleResponseRequest } from "./api/responses";
+import { handleAuthRequest } from './api/auth';
+import { handlePromptRequest } from './api/prompts';
+import { handleResponseRequest } from './api/responses';
 
 export default {
   async fetch(request, env, ctx) {
@@ -727,33 +727,33 @@ export default {
     const path = url.pathname;
 
     // CORS handling
-    if (request.method === "OPTIONS") {
+    if (request.method === 'OPTIONS') {
       return handleCors(request);
     }
 
     // Authentication middleware
     if (
-      path.startsWith("/api/") &&
-      path !== "/api/auth/login" &&
-      path !== "/api/auth/register"
+      path.startsWith('/api/') &&
+      path !== '/api/auth/login' &&
+      path !== '/api/auth/register'
     ) {
       try {
         request = await authenticateRequest(request, env);
       } catch (error) {
         return new Response(JSON.stringify({ error: error.message }), {
           status: 401,
-          headers: { "Content-Type": "application/json" },
+          headers: { 'Content-Type': 'application/json' },
         });
       }
     }
 
     // Route to appropriate handler
-    if (path.startsWith("/api/auth/")) {
+    if (path.startsWith('/api/auth/')) {
       return handleAuthRequest(request, env, ctx);
     }
 
-    if (path.startsWith("/api/prompts")) {
-      if (path.includes("/responses")) {
+    if (path.startsWith('/api/prompts')) {
+      if (path.includes('/responses')) {
         return handleResponseRequest(request, env, ctx);
       }
       return handlePromptRequest(request, env, ctx);
@@ -766,13 +766,13 @@ export default {
 
 // Helper functions
 async function authenticateRequest(request, env) {
-  const authHeader = request.headers.get("Authorization");
+  const authHeader = request.headers.get('Authorization');
 
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    throw new Error("Missing or invalid authorization header");
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    throw new Error('Missing or invalid authorization header');
   }
 
-  const token = authHeader.split(" ")[1];
+  const token = authHeader.split(' ')[1];
   // Implement JWT validation here
 
   return request;
@@ -781,10 +781,10 @@ async function authenticateRequest(request, env) {
 function handleCors(request) {
   return new Response(null, {
     headers: {
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type, Authorization",
-      "Access-Control-Max-Age": "86400",
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      'Access-Control-Max-Age': '86400',
     },
   });
 }
@@ -796,11 +796,11 @@ Here's an example of a prompt creation form:
 
 ```jsx
 // src/frontend/components/prompt/PromptForm.jsx
-import { useState } from "preact/hooks";
+import { useState } from 'preact/hooks';
 
 export default function PromptForm({ onSubmit }) {
-  const [title, setTitle] = useState("");
-  const [content, setContent] = useState("");
+  const [title, setTitle] = useState('');
+  const [content, setContent] = useState('');
   const [isPublic, setIsPublic] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -811,11 +811,11 @@ export default function PromptForm({ onSubmit }) {
     try {
       await onSubmit({ title, content, isPublic });
       // Reset form
-      setTitle("");
-      setContent("");
+      setTitle('');
+      setContent('');
       setIsPublic(false);
     } catch (error) {
-      console.error("Error creating prompt:", error);
+      console.error('Error creating prompt:', error);
     } finally {
       setIsSubmitting(false);
     }
@@ -866,7 +866,7 @@ export default function PromptForm({ onSubmit }) {
       </div>
 
       <button type="submit" disabled={isSubmitting} aria-busy={isSubmitting}>
-        {isSubmitting ? "Creating..." : "Create Prompt"}
+        {isSubmitting ? 'Creating...' : 'Create Prompt'}
       </button>
     </form>
   );

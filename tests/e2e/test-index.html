@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Codex Test Runner</title>
+    <style>
+      body {
+        font-family:
+          system-ui,
+          -apple-system,
+          sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+        line-height: 1.6;
+      }
+      h1 {
+        color: #333;
+        border-bottom: 2px solid #eee;
+        padding-bottom: 10px;
+      }
+      #results {
+        background-color: #f5f5f5;
+        border-radius: 5px;
+        padding: 15px;
+        white-space: pre-wrap;
+        font-family: monospace;
+        max-height: 400px;
+        overflow: auto;
+      }
+      .success {
+        color: green;
+      }
+      .failure {
+        color: red;
+      }
+      button {
+        background-color: #4caf50;
+        border: none;
+        color: white;
+        padding: 10px 20px;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 16px;
+        margin: 10px 0;
+        cursor: pointer;
+        border-radius: 4px;
+      }
+      .api-test {
+        margin-top: 20px;
+        padding: 15px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Codex Test Runner</h1>
+
+    <p>This page runs frontend tests for the Codex application.</p>
+
+    <button id="run-tests">Run Frontend Tests</button>
+
+    <div id="results">Test results will appear here...</div>
+
+    <div class="api-test">
+      <h2>API Health Check</h2>
+      <button id="check-api">Check API Health</button>
+      <div id="api-result">API status will appear here...</div>
+    </div>
+
+    <script type="module">
+      import {
+        runAllTests,
+        testLocalStorage,
+        testApiClient,
+        testUIComponents,
+      } from './test-helpers.js';
+
+      document
+        .getElementById('run-tests')
+        .addEventListener('click', async () => {
+          const resultsElement = document.getElementById('results');
+          resultsElement.innerHTML = 'Running tests...\n\n';
+
+          try {
+            // Run all frontend tests
+            const testResults = runAllTests();
+
+            // Display results
+            let output = '=== FRONTEND TEST RESULTS ===\n\n';
+
+            if (testResults.success) {
+              output += '✅ All tests passed!\n\n';
+            } else {
+              output += '❌ Some tests failed!\n\n';
+            }
+
+            output += `localStorage tests: ${testResults.results.storage.success ? '✅ PASSED' : '❌ FAILED'}\n`;
+            output += `API client tests: ${testResults.results.api.success ? '✅ PASSED' : '❌ FAILED'}\n`;
+            output += `UI component tests: ${testResults.results.ui.success ? '✅ PASSED' : '❌ FAILED'}\n\n`;
+
+            output += 'Test details:\n';
+            output += JSON.stringify(testResults.results, null, 2);
+
+            resultsElement.innerHTML = output;
+          } catch (error) {
+            resultsElement.innerHTML = `Error running tests: ${error.message}\n\n${error.stack}`;
+          }
+        });
+
+      document
+        .getElementById('check-api')
+        .addEventListener('click', async () => {
+          const apiResultElement = document.getElementById('api-result');
+          apiResultElement.innerHTML = 'Checking API health...';
+
+          try {
+            const response = await fetch('/api/health');
+            const data = await response.json();
+
+            apiResultElement.innerHTML = `API Status: ${data.status}\nMessage: ${data.message}\nEnvironment: ${data.environment}\nTimestamp: ${data.timestamp}`;
+          } catch (error) {
+            apiResultElement.innerHTML = `Error checking API: ${error.message}`;
+          }
+        });
+    </script>
+  </body>
+</html>

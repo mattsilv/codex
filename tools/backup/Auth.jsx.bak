@@ -1,0 +1,60 @@
+import { useEffect, useState } from 'preact/hooks';
+import { route } from 'preact-router';
+import useAuth from '../hooks/useAuth';
+import LoginForm from '../components/auth/LoginForm';
+import RegisterForm from '../components/auth/RegisterForm';
+import AuthLayout from '../components/layout/AuthLayout';
+import { isProduction } from '@shared/constants';
+
+export default function Auth() {
+  const { user, loading } = useAuth();
+  const [activeForm, setActiveForm] = useState('login');
+  
+  // Redirect to dashboard only if authenticated
+  useEffect(() => {
+    if (user) {
+      route('/dashboard');
+    }
+  }, [user]);
+
+  // Don't show auth forms if loading
+  if (loading) {
+    return (
+      <div className="container">
+        <div style={{ textAlign: 'center', padding: '3rem' }}>
+          <p>Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // In production, show login/register forms when not authenticated
+  return (
+    <AuthLayout>
+      <div className="auth-container">
+        <div className="auth-forms">
+          <div className="tabs">
+            <button
+              className={activeForm === 'login' ? 'active' : ''}
+              onClick={() => setActiveForm('login')}
+            >
+              Login
+            </button>
+            <button
+              className={activeForm === 'register' ? 'active' : ''}
+              onClick={() => setActiveForm('register')}
+            >
+              Register
+            </button>
+          </div>
+          
+          {activeForm === 'login' ? (
+            <LoginForm />
+          ) : (
+            <RegisterForm onSuccess={() => route('/dashboard')} />
+          )}
+        </div>
+      </div>
+    </AuthLayout>
+  );
+}

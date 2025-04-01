@@ -12,7 +12,7 @@ export default function useMarkdown(content = '') {
       setRawContent(content);
       const isDetectedMarkdown = detectMarkdown(content);
       setIsMarkdown(isDetectedMarkdown);
-      
+
       if (isDetectedMarkdown) {
         setRenderedContent(marked.parse(content));
       } else {
@@ -25,7 +25,7 @@ export default function useMarkdown(content = '') {
     setRawContent(newContent);
     const isDetectedMarkdown = detectMarkdown(newContent);
     setIsMarkdown(isDetectedMarkdown);
-    
+
     if (isDetectedMarkdown) {
       setRenderedContent(marked.parse(newContent));
     } else {
@@ -35,7 +35,7 @@ export default function useMarkdown(content = '') {
 
   const toggleMarkdown = () => {
     setIsMarkdown(!isMarkdown);
-    
+
     if (!isMarkdown) {
       setRenderedContent(marked.parse(rawContent));
     } else {
@@ -48,6 +48,6 @@ export default function useMarkdown(content = '') {
     renderedContent,
     isMarkdown,
     updateContent,
-    toggleMarkdown
+    toggleMarkdown,
   };
 }

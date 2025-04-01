@@ -25,8 +25,35 @@ export function validateEmail(email) {
   return re.test(email);
 }
 
-// Validate password strength for MVP
+// Validate password strength (matches backend requirements)
 export function validatePassword(password) {
-  // For MVP, just require 6+ characters
-  return password && password.length >= 6;
+  if (!password || password.length < 8) {
+    return {
+      valid: false,
+      message: 'Password must be at least 8 characters long',
+    };
+  }
+
+  // Check for multiple character types
+  const hasLowercase = /[a-z]/.test(password);
+  const hasUppercase = /[A-Z]/.test(password);
+  const hasNumber = /[0-9]/.test(password);
+  const hasSpecial = /[^a-zA-Z0-9]/.test(password);
+
+  const complexityScore = [
+    hasLowercase,
+    hasUppercase,
+    hasNumber,
+    hasSpecial,
+  ].filter(Boolean).length;
+
+  if (complexityScore < 3) {
+    return {
+      valid: false,
+      message:
+        'Password must contain at least 3 of: lowercase letters, uppercase letters, numbers, and special characters',
+    };
+  }
+
+  return { valid: true };
 }

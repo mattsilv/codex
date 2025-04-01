@@ -239,7 +239,7 @@ src/
 
 ```javascript
 // In index.jsx or equivalent
-import "@picocss/pico";
+import '@picocss/pico';
 ```
 
 ### 7.2 Custom Theming

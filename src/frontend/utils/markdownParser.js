@@ -4,7 +4,7 @@ import { marked } from 'marked';
 marked.setOptions({
   gfm: true,
   breaks: true,
-  sanitize: true
+  sanitize: true,
 });
 
 export function parseMarkdown(markdown) {

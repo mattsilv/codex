@@ -1,0 +1,32 @@
+# Cursor Rules for Codex Project
+
+## Codex TypeScript and Cloudflare Workers Rules
+
+1. **TypeScript Rules:**
+   - Use strict mode TypeScript for all new code
+   - Explicitly define return types for functions
+   - Use interfaces for component props
+   - Prefer readonly properties when values shouldn't change
+
+2. **ESM Import Rules:**
+   - Always use .js extensions in import statements for backend code
+   - Group imports: 1) Libraries 2) Components 3) Hooks 4) Utils
+   - Use named exports/imports rather than default exports
+
+3. **Cloudflare Workers Compatibility:**
+   - No Node.js-specific APIs (process, fs, etc.)
+   - No bcryptjs or other Node-dependent packages
+   - Use Web APIs instead of Node.js modules
+   - Access R2/D1 through env bindings
+   - Use proper error handling for Workers environment
+
+4. **Component Rules:**
+   - Use functional components with TypeScript interfaces
+   - Implement proper loading states for async operations
+   - Follow existing component patterns
+
+5. **Code Style:**
+   - 2-space indentation
+   - Single quotes for strings
+   - PascalCase for components, camelCase for functions/variables
+   - Explicit return types for functions

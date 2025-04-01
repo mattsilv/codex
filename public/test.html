@@ -1,187 +1,201 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
-<head>
-  <title>Codex API Test</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      max-width: 800px;
-      margin: 0 auto;
-      padding: 20px;
-    }
-    button {
-      margin: 10px 0;
-      padding: 8px 12px;
-      cursor: pointer;
-    }
-    pre {
-      background-color: #f0f0f0;
-      padding: 10px;
-      border-radius: 4px;
-      overflow: auto;
-    }
-  </style>
-</head>
-<body>
-  <h1>Codex API Test Page</h1>
-  
-  <h2>Test API</h2>
-  <button id="seed-data">Seed Test Data</button>
-  <button id="register">Register Test User</button>
-  <button id="login">Login</button>
-  <button id="get-prompts">Get Prompts</button>
-  <button id="create-prompt">Create Prompt</button>
-  
-  <h2>Results</h2>
-  <pre id="results">Click a button to test the API...</pre>
-  
-  <script>
-    // API Base URL
-    const API_URL = 'http://localhost:8787/api';
-    
-    // Result display element
-    const results = document.getElementById('results');
-    
-    // Show results
-    function showResult(data) {
-      results.textContent = JSON.stringify(data, null, 2);
-    }
-    
-    // Show errors
-    function showError(error) {
-      results.textContent = `Error: ${error.message}`;
-      console.error(error);
-    }
-    
-    // API helper
-    async function callAPI(endpoint, options = {}) {
-      try {
-        const token = localStorage.getItem('codex_token');
-        
-        const headers = {
-          'Content-Type': 'application/json',
-          ...options.headers
-        };
-        
-        if (token) {
-          headers['Authorization'] = `Bearer ${token}`;
+  <head>
+    <title>Codex API Test</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+      button {
+        margin: 10px 0;
+        padding: 8px 12px;
+        cursor: pointer;
+      }
+      pre {
+        background-color: #f0f0f0;
+        padding: 10px;
+        border-radius: 4px;
+        overflow: auto;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Codex API Test Page</h1>
+
+    <h2>Test API</h2>
+    <button id="seed-data">Seed Test Data</button>
+    <button id="register">Register Test User</button>
+    <button id="login">Login</button>
+    <button id="get-prompts">Get Prompts</button>
+    <button id="create-prompt">Create Prompt</button>
+
+    <h2>Results</h2>
+    <pre id="results">Click a button to test the API...</pre>
+
+    <script>
+      // API Base URL
+      const API_URL = 'http://localhost:8787/api';
+
+      // Result display element
+      const results = document.getElementById('results');
+
+      // Show results
+      function showResult(data) {
+        results.textContent = JSON.stringify(data, null, 2);
+      }
+
+      // Show errors
+      function showError(error) {
+        results.textContent = `Error: ${error.message}`;
+        console.error(error);
+      }
+
+      // API helper
+      async function callAPI(endpoint, options = {}) {
+        try {
+          const token = localStorage.getItem('codex_token');
+
+          const headers = {
+            'Content-Type': 'application/json',
+            ...options.headers,
+          };
+
+          if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+          }
+
+          const response = await fetch(`${API_URL}${endpoint}`, {
+            ...options,
+            headers,
+          });
+
+          const data = await response.json();
+
+          if (!response.ok) {
+            throw new Error(data.error || 'API request failed');
+          }
+
+          return data;
+        } catch (error) {
+          showError(error);
+          throw error;
         }
-        
-        const response = await fetch(`${API_URL}${endpoint}`, {
-          ...options,
-          headers
+      }
+
+      // Seed test data
+      document
+        .getElementById('seed-data')
+        .addEventListener('click', async () => {
+          try {
+            const data = await callAPI('/seed-test-data', { method: 'POST' });
+            showResult(data);
+
+            // Store test credentials for login
+            if (data.testUsers && data.testUsers.alice) {
+              localStorage.setItem(
+                'test_credentials',
+                JSON.stringify({
+                  email: data.testUsers.alice.email,
+                  password: 'password123',
+                  token: data.testUsers.alice.token,
+                })
+              );
+            }
+          } catch (error) {
+            // Error already displayed
+          }
         });
-        
-        const data = await response.json();
-        
-        if (!response.ok) {
-          throw new Error(data.error || 'API request failed');
-        }
-        
-        return data;
-      } catch (error) {
-        showError(error);
-        throw error;
-      }
-    }
-    
-    // Seed test data
-    document.getElementById('seed-data').addEventListener('click', async () => {
-      try {
-        const data = await callAPI('/seed-test-data', { method: 'POST' });
-        showResult(data);
-        
-        // Store test credentials for login
-        if (data.testUsers && data.testUsers.alice) {
-          localStorage.setItem('test_credentials', JSON.stringify({
-            email: data.testUsers.alice.email,
-            password: 'password123',
-            token: data.testUsers.alice.token
-          }));
-        }
-      } catch (error) {
-        // Error already displayed
-      }
-    });
-    
-    // Register test user
-    document.getElementById('register').addEventListener('click', async () => {
-      try {
-        const data = await callAPI('/auth/register', {
-          method: 'POST',
-          body: JSON.stringify({
-            username: 'testuser' + Date.now(),
-            email: 'test' + Date.now() + '@example.com',
-            password: 'password123'
-          })
+
+      // Register test user
+      document
+        .getElementById('register')
+        .addEventListener('click', async () => {
+          try {
+            const data = await callAPI('/auth/register', {
+              method: 'POST',
+              body: JSON.stringify({
+                username: 'testuser' + Date.now(),
+                email: 'test' + Date.now() + '@example.com',
+                password: 'password123',
+              }),
+            });
+
+            showResult(data);
+
+            // Store token
+            if (data.token) {
+              localStorage.setItem('codex_token', data.token);
+              localStorage.setItem('codex_user', JSON.stringify(data.user));
+            }
+          } catch (error) {
+            // Error already displayed
+          }
         });
-        
-        showResult(data);
-        
-        // Store token
-        if (data.token) {
-          localStorage.setItem('codex_token', data.token);
-          localStorage.setItem('codex_user', JSON.stringify(data.user));
+
+      // Login
+      document.getElementById('login').addEventListener('click', async () => {
+        try {
+          // Try to use stored test credentials
+          const testCredentials = JSON.parse(
+            localStorage.getItem('test_credentials') || '{}'
+          );
+
+          const data = await callAPI('/auth/login', {
+            method: 'POST',
+            body: JSON.stringify({
+              email: testCredentials.email || 'alice@example.com',
+              password: testCredentials.password || 'password123',
+            }),
+          });
+
+          showResult(data);
+
+          // Store token
+          if (data.token) {
+            localStorage.setItem('codex_token', data.token);
+            localStorage.setItem('codex_user', JSON.stringify(data.user));
+          }
+        } catch (error) {
+          // Error already displayed
         }
-      } catch (error) {
-        // Error already displayed
-      }
-    });
-    
-    // Login
-    document.getElementById('login').addEventListener('click', async () => {
-      try {
-        // Try to use stored test credentials
-        const testCredentials = JSON.parse(localStorage.getItem('test_credentials') || '{}');
-        
-        const data = await callAPI('/auth/login', {
-          method: 'POST',
-          body: JSON.stringify({
-            email: testCredentials.email || 'alice@example.com',
-            password: testCredentials.password || 'password123'
-          })
+      });
+
+      // Get prompts
+      document
+        .getElementById('get-prompts')
+        .addEventListener('click', async () => {
+          try {
+            const data = await callAPI('/prompts');
+            showResult(data);
+          } catch (error) {
+            // Error already displayed
+          }
         });
-        
-        showResult(data);
-        
-        // Store token
-        if (data.token) {
-          localStorage.setItem('codex_token', data.token);
-          localStorage.setItem('codex_user', JSON.stringify(data.user));
-        }
-      } catch (error) {
-        // Error already displayed
-      }
-    });
-    
-    // Get prompts
-    document.getElementById('get-prompts').addEventListener('click', async () => {
-      try {
-        const data = await callAPI('/prompts');
-        showResult(data);
-      } catch (error) {
-        // Error already displayed
-      }
-    });
-    
-    // Create prompt
-    document.getElementById('create-prompt').addEventListener('click', async () => {
-      try {
-        const data = await callAPI('/prompts', {
-          method: 'POST',
-          body: JSON.stringify({
-            title: 'Test Prompt ' + Date.now(),
-            content: 'This is a test prompt created from the API test page.',
-            isPublic: true,
-            tags: ['test', 'api']
-          })
+
+      // Create prompt
+      document
+        .getElementById('create-prompt')
+        .addEventListener('click', async () => {
+          try {
+            const data = await callAPI('/prompts', {
+              method: 'POST',
+              body: JSON.stringify({
+                title: 'Test Prompt ' + Date.now(),
+                content:
+                  'This is a test prompt created from the API test page.',
+                isPublic: true,
+                tags: ['test', 'api'],
+              }),
+            });
+
+            showResult(data);
+          } catch (error) {
+            // Error already displayed
+          }
         });
-        
-        showResult(data);
-      } catch (error) {
-        // Error already displayed
-      }
-    });
-  </script>
-</body>
+    </script>
+  </body>
 </html>

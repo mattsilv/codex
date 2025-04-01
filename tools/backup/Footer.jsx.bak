@@ -1,0 +1,11 @@
+export default function Footer() {
+  const APP_VERSION = '1.1.0'; // Version number to help track deployments
+  
+  return (
+    <footer className="container">
+      <small>
+        &copy; {new Date().getFullYear()} Codex - LLM Prompt Tracker | v{APP_VERSION}
+      </small>
+    </footer>
+  );
+}

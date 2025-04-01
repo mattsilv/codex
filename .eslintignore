@@ -1,0 +1,8 @@
+# Ignore build output
+dist
+
+# Ignore node modules (already default, but explicit doesn't hurt)
+node_modules
+
+# Ignore backups (Uncomment the line below if you want to ignore this folder)
+# tools/final-backup

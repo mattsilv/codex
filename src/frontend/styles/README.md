@@ -17,34 +17,34 @@ The CSS is organized in a modular fashion:
 ### Typography
 
 ```css
---font-xxs: 0.65rem;  /* 10px */
---font-xs: 0.75rem;   /* 12px */
---font-sm: 0.875rem;  /* 14px */
---font-base: 1rem;    /* 16px */
---font-md: 1.125rem;  /* 18px */
---font-lg: 1.25rem;   /* 20px */
---font-xl: 1.5rem;    /* 24px */
---font-xxl: 2rem;     /* 32px */
+--font-xxs: 0.65rem; /* 10px */
+--font-xs: 0.75rem; /* 12px */
+--font-sm: 0.875rem; /* 14px */
+--font-base: 1rem; /* 16px */
+--font-md: 1.125rem; /* 18px */
+--font-lg: 1.25rem; /* 20px */
+--font-xl: 1.5rem; /* 24px */
+--font-xxl: 2rem; /* 32px */
 ```
 
 ### Spacing
 
 ```css
 --space-xxs: 0.25rem; /* 4px */
---space-xs: 0.5rem;   /* 8px */
---space-sm: 0.75rem;  /* 12px */
---space-md: 1rem;     /* 16px */
---space-lg: 1.5rem;   /* 24px */
---space-xl: 2rem;     /* 32px */
---space-xxl: 3rem;    /* 48px */
+--space-xs: 0.5rem; /* 8px */
+--space-sm: 0.75rem; /* 12px */
+--space-md: 1rem; /* 16px */
+--space-lg: 1.5rem; /* 24px */
+--space-xl: 2rem; /* 32px */
+--space-xxl: 3rem; /* 48px */
 ```
 
 ### Border Radius
 
 ```css
 --radius-sm: 0.25rem; /* 4px */
---radius-md: 0.5rem;  /* 8px */
---radius-lg: 1rem;    /* 16px */
+--radius-md: 0.5rem; /* 8px */
+--radius-lg: 1rem; /* 16px */
 ```
 
 ## Markdown Rendering
@@ -103,7 +103,7 @@ To adjust the overall size of markdown rendering, modify the `--markdown-scale` 
 <Button
   onClick={handleClick}
   variant="outline" // "primary", "secondary", "contrast", "outline"
-  className="btn-sm" // "btn-md" (default), "btn-lg" 
+  className="btn-sm" // "btn-md" (default), "btn-lg"
 >
   Click Me
 </Button>

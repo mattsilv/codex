@@ -1,35 +1,47 @@
 #!/bin/bash
 
-# Check if wrangler is installed
-if ! command -v npx &> /dev/null
-then
-    echo "Error: npx is not installed. Please install Node.js and npm."
-    exit 1
+# Script to start the Codex backend server
+# Ensures all dependencies and environment settings are correct
+
+echo "Starting Codex backend server..."
+
+# Check for required commands
+if ! command -v npx &> /dev/null; then
+  echo "Error: npx is not installed. Please install Node.js and npm."
+  exit 1
 fi
 
-# Create directories if they don't exist
+if ! command -v node &> /dev/null; then
+  echo "Error: node is not installed. Please install Node.js."
+  exit 1
+fi
+
+# Create required directories
+echo "Setting up Wrangler state directories..."
 mkdir -p .wrangler/state/d1
 mkdir -p .wrangler/state/r2
 mkdir -p .wrangler/state/kv
 
-# Create the D1 database if it doesn't exist yet
-echo "Ensuring database exists..."
+# Check for existing Wrangler configuration
+if [ ! -f "wrangler.toml" ]; then
+  echo "Error: wrangler.toml is missing. Please ensure the project is set up correctly."
+  exit 1
+fi
+
+# Apply migrations if database doesn't exist
 if [ ! -f .wrangler/state/d1/codex_db.sqlite3 ]; then
-    npx wrangler d1 create codex_db --local
-fi
-
-# Apply migrations
-echo "Applying database migrations..."
-npx wrangler d1 migrations apply codex_db --local
-
-# Start the dev server with proper bindings
-echo "Starting Codex backend server..."
-echo "API will be available at http://localhost:8787"
-
-# Use unbuffer if available to ensure we see output in real-time
-if command -v unbuffer &> /dev/null; then
-    unbuffer npx wrangler dev --port 8787 --local --persist 
+  echo "Database not found, creating and applying migrations..."
+  npx wrangler d1 create codex_db || echo "Database may already exist, continuing..."
+  npx wrangler d1 migrations apply codex_db --local
 else
-    # Otherwise use stdbuf to ensure unbuffered output
-    stdbuf -o0 npx wrangler dev --port 8787 --local --persist 
+  echo "Using existing database, checking for pending migrations..."
+  npx wrangler d1 migrations apply codex_db --local
 fi
+
+# Start the Wrangler dev server
+echo "Starting Cloudflare Workers backend server on port 8787..."
+echo "API will be available at http://localhost:8787"
+npx wrangler dev --port 8787 --persist-to .wrangler/state
+
+# Exit with the result of the Wrangler command
+exit $?

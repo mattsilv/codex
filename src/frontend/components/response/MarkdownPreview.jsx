@@ -1,6 +1,6 @@
 /**
  * MarkdownPreview Component - Handles rendering of markdown content
- * 
+ *
  * @param {string} rawContent - Raw text/markdown content
  * @param {string} renderedContent - HTML from rendered markdown
  * @param {boolean} isMarkdown - Whether content should be treated as markdown
@@ -18,15 +18,16 @@ export default function MarkdownPreview({
   onChange,
   error,
   size = 'medium',
-  compact = false
+  compact = false,
 }) {
   // Create class names based on size and compact props
   const markdownClassName = `markdown-preview${
-    size === 'small' ? ' markdown-small' : 
-    size === 'large' ? ' markdown-large' : ''
-  }${
-    compact ? ' markdown-compact' : ''
-  }`;
+    size === 'small'
+      ? ' markdown-small'
+      : size === 'large'
+        ? ' markdown-large'
+        : ''
+  }${compact ? ' markdown-compact' : ''}`;
 
   return (
     <>
@@ -55,17 +56,25 @@ export default function MarkdownPreview({
           ></textarea>
           <div className={markdownClassName}>
             <h4 className="preview-heading">Preview:</h4>
-            <div className="markdown-content" dangerouslySetInnerHTML={{ __html: renderedContent }}></div>
+            <div
+              className="markdown-content"
+              dangerouslySetInnerHTML={{ __html: renderedContent }}
+            ></div>
           </div>
         </>
       ) : isMarkdown ? (
         <div className={markdownClassName}>
-          <div className="markdown-content" dangerouslySetInnerHTML={{ __html: renderedContent }}></div>
+          <div
+            className="markdown-content"
+            dangerouslySetInnerHTML={{ __html: renderedContent }}
+          ></div>
         </div>
       ) : (
-        <div className={markdownClassName} style={{ whiteSpace: 'pre-wrap' }}>{rawContent}</div>
+        <div className={markdownClassName} style={{ whiteSpace: 'pre-wrap' }}>
+          {rawContent}
+        </div>
       )}
-      
+
       {error && <small className="error">{error}</small>}
     </>
   );

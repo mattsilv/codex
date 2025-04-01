@@ -1,0 +1,62 @@
+🪵  Writing logs to "/Users/m/Library/Preferences/.wrangler/logs/wrangler-2025-03-31_13-09-06_257.log"
+Metrics dispatcher: Posting data {"deviceId":"f888138b-38db-467d-b2de-e3aca2f08db1","event":"wrangler command started","timestamp":1743426546293,"properties":{"amplitude_session_id":1743426546292,"amplitude_event_id":0,"wranglerVersion":"4.6.0","osPlatform":"Mac OS","osVersion":"Darwin Kernel Version 24.3.0: Thu Jan  2 20:31:46 PST 2025; root:xnu-11215.81.4~4/RELEASE_ARM64_T8132","nodeVersion":22,"packageManager":"npm","isFirstUsage":false,"configFileType":"toml","isCI":false,"isPagesCI":false,"isWorkersCI":false,"isInteractive":false,"hasAssets":false,"argsUsed":["logLevel","port"],"argsCombination":"logLevel, port","command":"wrangler dev","args":{"port":8787,"logLevel":"debug","xJsonConfig":true,"j":true,"latest":true,"noBundle":false,"remote":false,"r":false,"testScheduled":false,"xVectorizeBindToProd":false,"xImagesLocalMode":false}}}
+.env file not found at ".env". Continuing... For more details, refer to https://developers.cloudflare.com/workers/wrangler/system-environment-variables/
+
+ ⛅️ wrangler 4.6.0
+------------------
+
+.env file not found at ".dev.vars". Continuing... For more details, refer to https://developers.cloudflare.com/workers/wrangler/system-environment-variables/
+Your Worker and resources are simulated locally via Miniflare. For more information, see: https://developers.cloudflare.com/workers/testing/local-development.
+
+Your worker has access to the following bindings:
+- D1 Databases:
+  - DB: codex_db (placeholder-database-id) [simulated locally]
+- R2 Buckets:
+  - CONTENT_STORE: codex-content [simulated locally]
+- Vars:
+  - ENVIRONMENT: "development"
+RemoteRuntimeController teardown beginning...
+RemoteRuntimeController teardown complete
+⎔ Starting local server...
+[wrangler-ProxyWorker:inf] Ready on http://localhost:8787
+[InspectorProxyWorker] handleProxyControllerIncomingMessage {"type":"reloadStart"}
+[wrangler-ProxyWorker:inf] GET /cdn-cgi/ProxyWorker/pause 204 No Content (1ms)
+[wrangler-ProxyWorker:inf] GET /cdn-cgi/ProxyWorker/pause 204 No Content (0ms)
+[wrangler-ProxyWorker:inf] GET /cdn-cgi/ProxyWorker/pause 204 No Content (0ms)
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mworkerd/server/server.c++:3999: info: Inspector is listening[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mservice core:user:codex: Uncaught ReferenceError: process is not defined[0m
+
+    at null.<anonymous> (index.js:9:13)
+
+
+Error in LocalRuntimeController: Error reloading local server
+ MiniflareCoreError [ERR_RUNTIME_FAILURE]: The Workers runtime failed to start. There is likely additional logging output above.
+    at #assembleAndUpdateConfig (/Users/m/gh/codex/node_modules/.pnpm/miniflare@4.20250321.1/node_modules/miniflare/dist/src/index.js:15547:13)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async Mutex.runWith (/Users/m/gh/codex/node_modules/.pnpm/miniflare@4.20250321.1/node_modules/miniflare/dist/src/index.js:1650:48)
+    at async #waitForReady (/Users/m/gh/codex/node_modules/.pnpm/miniflare@4.20250321.1/node_modules/miniflare/dist/src/index.js:15615:5)
+    at async #onBundleComplete (/Users/m/gh/codex/node_modules/.pnpm/wrangler@4.6.0/node_modules/wrangler/wrangler-dist/cli.js:93620:29)
+    at async Mutex.runWith (/Users/m/gh/codex/node_modules/.pnpm/miniflare@4.20250321.1/node_modules/miniflare/dist/src/index.js:1650:48) {
+  code: 'ERR_RUNTIME_FAILURE',
+  cause: undefined
+}
+=> Error contextual data: undefined
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mThe Workers runtime failed to start. There is likely additional logging output above.[0m
+
+
+MiniflareCoreError [ERR_RUNTIME_FAILURE]: The Workers runtime failed to start. There is likely additional logging output above.
+    at #assembleAndUpdateConfig (/Users/m/gh/codex/node_modules/.pnpm/miniflare@4.20250321.1/node_modules/miniflare/dist/src/index.js:15547:13)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async Mutex.runWith (/Users/m/gh/codex/node_modules/.pnpm/miniflare@4.20250321.1/node_modules/miniflare/dist/src/index.js:1650:48)
+    at async #waitForReady (/Users/m/gh/codex/node_modules/.pnpm/miniflare@4.20250321.1/node_modules/miniflare/dist/src/index.js:15615:5)
+    at async #onBundleComplete (/Users/m/gh/codex/node_modules/.pnpm/wrangler@4.6.0/node_modules/wrangler/wrangler-dist/cli.js:93620:29)
+    at async Mutex.runWith (/Users/m/gh/codex/node_modules/.pnpm/miniflare@4.20250321.1/node_modules/miniflare/dist/src/index.js:1650:48)
+[32mIf you think this is a bug then please create an issue at https://github.com/cloudflare/workers-sdk/issues/new/choose[0m
+? Would you like to report this error to Cloudflare? Wrangler's output and the error details will be shared with the Wrangler team to help us diagnose and fix the issue.
+🤖 Using fallback value in non-interactive context: no
+Sentry: Reporting disabled - would have sent MiniflareCoreError [ERR_RUNTIME_FAILURE]: The Workers runtime failed to start. There is likely additional logging output above..
+Metrics dispatcher: Posting data {"deviceId":"f888138b-38db-467d-b2de-e3aca2f08db1","event":"wrangler command errored","timestamp":1743426546409,"properties":{"amplitude_session_id":1743426546292,"amplitude_event_id":1,"wranglerVersion":"4.6.0","osPlatform":"Mac OS","osVersion":"Darwin Kernel Version 24.3.0: Thu Jan  2 20:31:46 PST 2025; root:xnu-11215.81.4~4/RELEASE_ARM64_T8132","nodeVersion":22,"packageManager":"npm","isFirstUsage":false,"configFileType":"toml","isCI":false,"isPagesCI":false,"isWorkersCI":false,"isInteractive":false,"hasAssets":false,"argsUsed":["logLevel","port"],"argsCombination":"logLevel, port","command":"wrangler dev","args":{"port":8787,"logLevel":"debug","xJsonConfig":true,"j":true,"latest":true,"noBundle":false,"remote":false,"r":false,"testScheduled":false,"xVectorizeBindToProd":false,"xImagesLocalMode":false},"durationMs":124,"durationSeconds":0.124,"durationMinutes":0.0020666666666666667}}
+🪵  Logs were written to "/Users/m/Library/Preferences/.wrangler/logs/wrangler-2025-03-31_13-09-06_257.log"

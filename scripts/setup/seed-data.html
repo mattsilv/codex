@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Seed Test Data</title>
+    <style>
+      body {
+        font-family:
+          system-ui,
+          -apple-system,
+          sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+        line-height: 1.6;
+      }
+      button {
+        background-color: #0070f3;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 16px;
+      }
+      pre {
+        background-color: #f5f5f5;
+        padding: 15px;
+        border-radius: 4px;
+        overflow: auto;
+      }
+      .success {
+        color: green;
+      }
+      .error {
+        color: red;
+      }
+      .user-box {
+        border: 1px solid #ddd;
+        padding: 15px;
+        margin: 10px 0;
+        border-radius: 4px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Codex - Seed Test Data</h1>
+    <p>Click the button below to seed the database with test data:</p>
+    <button id="seedBtn">Seed Test Data</button>
+
+    <div id="status" style="margin: 20px 0"></div>
+    <div id="results"></div>
+
+    <script>
+      const seedBtn = document.getElementById('seedBtn');
+      const status = document.getElementById('status');
+      const results = document.getElementById('results');
+
+      seedBtn.addEventListener('click', async () => {
+        try {
+          status.innerHTML = '<p>Seeding database...</p>';
+          seedBtn.disabled = true;
+
+          const response = await fetch(
+            'http://localhost:8787/api/seed-test-data'
+          );
+          const result = await response.json();
+
+          // Display the raw result
+          results.innerHTML = `<h3>Response:</h3><pre>${JSON.stringify(result, null, 2)}</pre>`;
+
+          if (result.success) {
+            status.innerHTML =
+              '<p class="success">✅ Test data seeded successfully!</p>';
+
+            if (result.testUsers) {
+              let userHtml = '<h3>Test Users:</h3>';
+
+              // Alice
+              userHtml += '<div class="user-box">';
+              userHtml += '<h4>Alice</h4>';
+              userHtml += '<p><strong>Email:</strong> alice@example.com</p>';
+              userHtml += '<p><strong>Password:</strong> password123</p>';
+              userHtml += `<p><strong>Token:</strong> ${result.testUsers.alice.token.substring(0, 20)}...</p>`;
+              userHtml += '</div>';
+
+              // Bob
+              userHtml += '<div class="user-box">';
+              userHtml += '<h4>Bob</h4>';
+              userHtml += '<p><strong>Email:</strong> bob@example.com</p>';
+              userHtml += '<p><strong>Password:</strong> password123</p>';
+              userHtml += `<p><strong>Token:</strong> ${result.testUsers.bob.token.substring(0, 20)}...</p>`;
+              userHtml += '</div>';
+
+              results.innerHTML = userHtml + results.innerHTML;
+            }
+          } else {
+            status.innerHTML = `<p class="error">❌ Failed to seed test data: ${result.message}</p>`;
+          }
+        } catch (error) {
+          status.innerHTML = `<p class="error">❌ Error: ${error.message}</p>`;
+          results.innerHTML =
+            '<p>Make sure the Wrangler server is running on http://localhost:8787</p>';
+        } finally {
+          seedBtn.disabled = false;
+        }
+      });
+    </script>
+  </body>
+</html>
